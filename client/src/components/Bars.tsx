@@ -128,16 +128,17 @@ export function NotationPreview({ bars, max = 2 }: { bars: Bar[]; max?: number }
 }
 
 // ---------- grid ----------
+/** Click cycle: empty -> normal -> accent -> ghost -> empty. */
+const NEXT_LEVEL: Level[] = [2, 0, 3, 1]; // indexed by current level (0 empty, 1 ghost, 2 normal, 3 accent)
+
 interface GridProps {
   bar: Bar;
-  brush: Level;
   editable: boolean;
   onEdit?: (update: (b: Bar) => Bar) => void;
   onHit?: (inst: Instrument, level: Level) => void;
 }
 
-const BarGrid = memo(function BarGrid({ bar, brush, editable, onEdit, onHit }: GridProps) {
-  const { t } = useI18n();
+const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProps) {
   const spb = stepsPerBeat(bar.triplet);
   const n = stepCount(bar);
   const paint = useRef<Level | null>(null);
@@ -148,13 +149,7 @@ const BarGrid = memo(function BarGrid({ bar, brush, editable, onEdit, onHit }: G
     const inst = cell.dataset.inst as Instrument;
     const step = Number(cell.dataset.step);
     const target = paint.current;
-    // when painting a note, never erase others; when erasing, only touch filled cells
-    onEdit((b) => {
-      const cur = getLevel(b, inst, step);
-      if (cur === target) return b;
-      if (target === 0 && cur === 0) return b;
-      return setLevel(b, inst, step, target);
-    });
+    onEdit((b) => (getLevel(b, inst, step) === target ? b : setLevel(b, inst, step, target)));
     if (target > 0) onHit?.(inst, target);
   };
 
@@ -163,7 +158,7 @@ const BarGrid = memo(function BarGrid({ bar, brush, editable, onEdit, onHit }: G
     const cell = (e.target as Element).closest<HTMLElement>("[data-cell]");
     if (!cell) return;
     const cur = getLevel(bar, cell.dataset.inst as Instrument, Number(cell.dataset.step));
-    paint.current = cur === brush ? 0 : brush;
+    paint.current = NEXT_LEVEL[cur];
     apply(cell);
     if (e.pointerType === "mouse") (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -178,14 +173,12 @@ const BarGrid = memo(function BarGrid({ bar, brush, editable, onEdit, onHit }: G
   return (
     <div
       className={`grid${editable ? " editable" : ""}`}
-      style={{ ["--n" as string]: n }}
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={up}
     >
       <div className="grid-head">
-        <span className="label" />
         {Array.from({ length: bar.beats }, (_, b) => (
           <span key={b} className="beat-num" style={{ width: `calc(var(--cell) * ${spb})` }}>
             {b + 1}
@@ -194,7 +187,6 @@ const BarGrid = memo(function BarGrid({ bar, brush, editable, onEdit, onHit }: G
       </div>
       {INSTRUMENTS.map((inst) => (
         <div key={inst} className="grid-row">
-          <span className="label">{t(`inst_${inst}`)}</span>
           {Array.from({ length: n }, (_, i) => {
             const level = getLevel(bar, inst, i);
             return (
@@ -224,25 +216,26 @@ interface ViewProps {
   playing: boolean;
   getPosition: () => number | null;
   editable?: boolean;
-  brush?: Level;
   onEdit?: (barIndex: number, update: (b: Bar) => Bar) => void;
   onHit?: (inst: Instrument, level: Level) => void;
+  /** Fixed-height controls above each bar (editor). */
   renderHeader?: (barIndex: number) => ReactNode;
+  /** Rendered after the last bar inside the scroller (e.g. add-bar button). */
+  trailing?: ReactNode;
 }
 
-export function GrooveView({ bars, mode, playing, getPosition, editable = false, brush = 2, onEdit, onHit, renderHeader }: ViewProps) {
+/** Bars side by side in one horizontal scroller; the scroller follows the playhead. */
+export function GrooveView({ bars, mode, playing, getPosition, editable = false, onEdit, onHit, renderHeader, trailing }: ViewProps) {
   const { t } = useI18n();
   const heads = useRef<(HTMLElement | null)[]>([]);
-  const scrollers = useRef<(HTMLElement | null)[]>([]);
+  const scroller = useRef<HTMLDivElement>(null);
   const barsRef = useRef(bars);
   barsRef.current = bars;
-  const lastActive = useRef(-1);
 
   useEffect(() => {
     const hide = () => heads.current.forEach((h) => h && (h.style.display = "none"));
     if (!playing) {
       hide();
-      lastActive.current = -1;
       return;
     }
     let raf = 0;
@@ -258,17 +251,14 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
         if (pos < end || i === bs.length - 1) {
           const frac = Math.min(1, Math.max(0, (pos - start) / bs[i].beats));
           const ph = heads.current[i];
+          const sc = scroller.current;
           if (ph) {
             ph.style.display = "block";
             ph.style.left = `calc(var(--label) + var(--w) * ${frac})`;
-            const sc = scrollers.current[i];
             if (sc) {
-              const x = ph.offsetLeft;
-              if (x > sc.scrollLeft + sc.clientWidth - 24 || x < sc.scrollLeft + 90) sc.scrollLeft = Math.max(0, x - 100);
-            }
-            if (lastActive.current !== i) {
-              lastActive.current = i;
-              sc?.closest(".bar-block")?.scrollIntoView({ block: "nearest" });
+              const x = ph.getBoundingClientRect().left - sc.getBoundingClientRect().left + sc.scrollLeft;
+              const target = Math.max(0, x - sc.clientWidth * 0.3);
+              if (Math.abs(target - sc.scrollLeft) > 0.5) sc.scrollLeft = target;
             }
           }
           return;
@@ -281,34 +271,33 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
   }, [playing, getPosition]);
 
   return (
-    <div className={`bars ${mode}`}>
-      {bars.map((bar, i) => {
-        const w =
-          mode === "grid"
-            ? `calc(var(--cell) * ${stepCount(bar)})`
-            : `${barWidth(bar) - PAD * 2}px`;
-        return (
-          <div key={i} className="bar-block">
-            {renderHeader ? renderHeader(i) : <span className="bar-no">{i + 1}</span>}
-            <div className="bar-scroll" ref={(el) => void (scrollers.current[i] = el)}>
-              <div className="bar-inner" style={{ ["--w" as string]: w, ["--label" as string]: mode === "grid" ? "var(--label-w)" : `${PAD}px` }}>
+    <div className={`rhythm ${mode}${renderHeader ? " with-head" : ""}`}>
+      {mode === "grid" && (
+        <div className="labels" aria-hidden="true">
+          {INSTRUMENTS.map((inst) => (
+            <span key={inst}>{t(`inst_${inst}`)}</span>
+          ))}
+        </div>
+      )}
+      <div className="bars" ref={scroller}>
+        {bars.map((bar, i) => {
+          const w = mode === "grid" ? `calc(var(--cell) * ${stepCount(bar)})` : `${barWidth(bar) - PAD * 2}px`;
+          return (
+            <div key={i} className="bar-block">
+              {renderHeader ? renderHeader(i) : <span className="bar-no">{i + 1}</span>}
+              <div className="bar-inner" style={{ ["--w" as string]: w, ["--label" as string]: mode === "grid" ? "0px" : `${PAD}px` }}>
                 {mode === "grid" ? (
-                  <BarGrid
-                    bar={bar}
-                    brush={brush}
-                    editable={editable}
-                    onEdit={onEdit ? (u) => onEdit(i, u) : undefined}
-                    onHit={onHit}
-                  />
+                  <BarGrid bar={bar} editable={editable} onEdit={onEdit ? (u) => onEdit(i, u) : undefined} onHit={onHit} />
                 ) : (
                   <NotationBar bar={bar} />
                 )}
-                <div className="playhead" ref={(el) => void (heads.current[i] = el)} aria-label={t("play")} />
+                <div className="playhead" ref={(el) => void (heads.current[i] = el)} />
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+        {trailing}
+      </div>
     </div>
   );
 }

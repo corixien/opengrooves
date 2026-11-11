@@ -42,7 +42,6 @@ export function EditorPage() {
   const forkId = useSearchParams()[0].get("fork");
   const [form, setForm] = useState<Draft>(() => (forkId ? BLANK : (store.getDraft() ?? BLANK)));
   const [restored] = useState(() => !forkId && store.getDraft() !== null);
-  const [brush, setBrush] = useState<Level>(2);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const player = usePlayer(form.bars, form.bpm);
@@ -96,18 +95,31 @@ export function EditorPage() {
     const bar = form.bars[i];
     return (
       <div className="bar-head">
-        <span className="bar-no">
-          {t("bar")} {i + 1}
-        </span>
-        <div className="field inline">
-          <span>{t("beatsPerBar")}</span>
+        <div className="bar-head-row">
+          <span className="bar-no">{i + 1}</span>
           <Select
             className="beats"
             label={t("beatsPerBar")}
             value={bar.beats}
             onChange={(beats) => editBar(i, (b) => resizeBar(b, beats, b.triplet))}
-            options={Array.from({ length: 8 }, (_, k) => ({ value: k + 1, label: String(k + 1) }))}
+            options={Array.from({ length: 8 }, (_, k) => ({ value: k + 1, label: `${k + 1}/4` }))}
           />
+          <span className="spacer" />
+          <button
+            className="btn icon"
+            title={t("duplicateBar")}
+            aria-label={t("duplicateBar")}
+            disabled={form.bars.length >= MAX_BARS}
+            onClick={() => setBars((bs) => [...bs.slice(0, i + 1), structuredClone(bs[i]), ...bs.slice(i + 1)])}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="4.5" y="4.5" width="8" height="8" /><path d="M9.5 4.5v-3h-8v8h3" /></svg>
+          </button>
+          <button className="btn icon" title={t("clearBar")} aria-label={t("clearBar")} onClick={() => editBar(i, (b) => ({ ...b, rows: {} }))}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 7h10" /></svg>
+          </button>
+          <button className="btn icon danger" title={t("deleteBar")} aria-label={t("deleteBar")} disabled={form.bars.length <= 1} onClick={() => setBars((bs) => bs.filter((_, j) => j !== i))}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l8 8M11 3l-8 8" /></svg>
+          </button>
         </div>
         <div className="seg" role="group">
           <button className={!bar.triplet ? "on" : ""} onClick={() => editBar(i, (b) => resizeBar(b, b.beats, false))}>
@@ -117,20 +129,6 @@ export function EditorPage() {
             {t("gridTriplet")}
           </button>
         </div>
-        <span className="spacer" />
-        <button
-          className="btn small"
-          disabled={form.bars.length >= MAX_BARS}
-          onClick={() => setBars((bs) => [...bs.slice(0, i + 1), structuredClone(bs[i]), ...bs.slice(i + 1)])}
-        >
-          {t("duplicateBar")}
-        </button>
-        <button className="btn small" onClick={() => editBar(i, (b) => ({ ...b, rows: {} }))}>
-          {t("clearBar")}
-        </button>
-        <button className="btn small danger" disabled={form.bars.length <= 1} onClick={() => setBars((bs) => bs.filter((_, j) => j !== i))}>
-          {t("deleteBar")}
-        </button>
       </div>
     );
   };
@@ -179,7 +177,7 @@ export function EditorPage() {
                 onChange={(e) => patch({ bpm: Math.min(MAX_BPM, Math.max(MIN_BPM, Number(e.target.value) || MIN_BPM)) })}
               />
             </label>
-            <label className="field wide">
+            <label className="field wide grow">
               <span>{t("fieldDescription")}</span>
               <textarea rows={3} maxLength={300} value={form.description} onChange={(e) => patch({ description: e.target.value })} />
             </label>
@@ -217,17 +215,6 @@ export function EditorPage() {
         <header className="panel-head">
           <span className="step">3</span>
           <h2>{t("sectionPattern")}</h2>
-          <span className="spacer" />
-          <div className="brushbar">
-            <span className="label-strong">{t("brush")}</span>
-            <div className="seg" role="group">
-              {([1, 2, 3] as Level[]).map((l) => (
-                <button key={l} className={brush === l ? "on" : ""} onClick={() => setBrush(l)}>
-                  <i className={`dot l${l}`} /> {t(l === 1 ? "levelGhost" : l === 2 ? "levelNormal" : "levelAccent")}
-                </button>
-              ))}
-            </div>
-          </div>
         </header>
         <p className="muted hint">{t("brushHint")}</p>
 
@@ -235,21 +222,25 @@ export function EditorPage() {
           bars={form.bars}
           mode="grid"
           editable
-          brush={brush}
           playing={player.playing}
           getPosition={player.getPosition}
           onEdit={editBar}
           onHit={onHit}
           renderHeader={header}
+          trailing={
+            <button
+              className="add-bar"
+              disabled={form.bars.length >= MAX_BARS}
+              onClick={() => setBars((bs) => [...bs, emptyBar(bs[bs.length - 1]?.beats ?? 4, bs[bs.length - 1]?.triplet ?? false)])}
+            >
+              <span className="plus">+</span>
+              {t("addBar")}
+              <small>
+                {form.bars.length}/{MAX_BARS}
+              </small>
+            </button>
+          }
         />
-
-        <button
-          className="btn add-bar"
-          disabled={form.bars.length >= MAX_BARS}
-          onClick={() => setBars((bs) => [...bs, emptyBar(bs[bs.length - 1]?.beats ?? 4, bs[bs.length - 1]?.triplet ?? false)])}
-        >
-          + {t("addBar")} ({form.bars.length}/{MAX_BARS})
-        </button>
       </section>
 
       <div className="publish">

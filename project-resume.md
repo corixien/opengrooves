@@ -14,6 +14,9 @@ V1 localhost complete: M1 scaffold/DB/API, M2 grid editor, M3 player (samples, m
 ## Update (round 2)
 Custom Select component, Lexend font (@fontsource-variable/lexend), panel layout in editor/detail, sticky player dock, focus options moved to DB (GET /api/options, admin-editable in Neon), graceful PGlite shutdown.
 
+## Update (round 3)
+Bars side by side in one horizontal scroller (follows playhead), click cycle normal -> accent -> ghost -> off, continuous playhead (extrapolated between beat marks), equal-height panels, #root flex so the dock sits at the bottom, rounded logo.
+
 ## Next / open
 - Deploy: Render (web service: build `npm run build`, start `npm start`) + Neon (DATABASE_URL; never test against branch production)
 - Possible: drag-paint on touch, MIDI/PDF export, report/moderation, real engraving polish (rests, flags)

@@ -309,8 +309,10 @@ class Engine {
     if (cur < 0) return null;
     const a = m[cur];
     const b = m[cur + 1];
-    if (!b || b.time <= a.time || b.beat < a.beat) return a.beat;
-    return a.beat + ((now - a.time) / (b.time - a.time)) * (b.beat - a.beat);
+    // Marks are only scheduled ~AHEAD seconds early, so extrapolate with the current tempo
+    // (capped at the next beat mark) to keep the playhead moving continuously.
+    const span = b && b.beat > a.beat ? b.beat - a.beat : 1;
+    return a.beat + Math.min(span, ((now - a.time) * this.settings.bpm) / 60);
   }
 }
 

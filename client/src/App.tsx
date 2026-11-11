@@ -24,9 +24,10 @@ export function App() {
         <div className="container bar">
           <Link to="/" className="logo">
             <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
-              <rect x="6" y="8" width="5" height="16" />
-              <rect x="13.5" y="13" width="5" height="11" />
-              <rect x="21" y="10" width="5" height="14" />
+              <rect className="bg" width="32" height="32" rx="8" />
+              <rect x="7" y="9" width="4.5" height="14" rx="1" />
+              <rect x="13.75" y="13" width="4.5" height="10" rx="1" />
+              <rect x="20.5" y="11" width="4.5" height="12" rx="1" />
             </svg>
             Open<b>grooves</b>
           </Link>
