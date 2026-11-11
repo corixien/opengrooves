@@ -1,2 +1,2 @@
-Default kit: "Virtuosity Drums" by Karoryfer Samples via sfzinstruments (CC0 1.0), mid microphone.
-Fetch with `npm run samples`. Replace freely: put audio files here and edit manifest.json.
+Own recording, cut per hit (soft, medium, hard) with scripts/slice-samples.py:
+`python3 scripts/slice-samples.py <recording.wav>`. Replace freely: put audio files here and edit manifest.json.

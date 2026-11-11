@@ -1,14 +1,22 @@
 import { z } from "zod";
 
+/** Top to bottom, like the staff. */
 export const INSTRUMENTS = [
+  "splash",
+  "china",
+  "crash2",
   "crash",
+  "rideBell",
   "ride",
   "hhOpen",
+  "hhHalf",
   "hhClosed",
+  "hhPedal",
   "tomHigh",
   "tomMid",
   "tomLow",
   "snare",
+  "sidestick",
   "kick",
 ] as const;
 export type Instrument = (typeof INSTRUMENTS)[number];

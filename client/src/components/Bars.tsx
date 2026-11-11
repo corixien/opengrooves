@@ -15,22 +15,30 @@ import { useI18n } from "../i18n";
 // ---------- notation geometry (SVG units) ----------
 const LEAD = 14; // space between the bar line and the first note step
 const BEAT_W = 72;
-const H = 104;
-const LINE_Y0 = 70; // y of bottom staff line (E4)
+const H = 116;
+const LINE_Y0 = 84; // y of bottom staff line (E4)
 /** Bar line to bar line; time maps linearly onto it (from LEAD), so the playhead crosses bars without jumping. */
 const barWidth = (bar: Bar) => Math.max(barQuarters(bar) * BEAT_W, stepCount(bar) * 18);
 
-/** Diatonic step above the bottom staff line and head style per instrument. */
-const NOTE: Record<Instrument, { step: number; head: "x" | "o" | "xo" }> = {
+/** Diatonic step above the bottom staff line and head style per instrument; foot instruments get downward stems. */
+type Head = "x" | "o" | "xo" | "xh" | "xb" | "d";
+const NOTE: Record<Instrument, { step: number; head: Head; foot?: true }> = {
+  splash: { step: 13, head: "x" },
+  china: { step: 12, head: "xb" },
+  crash2: { step: 11, head: "x" },
   crash: { step: 10, head: "x" },
+  rideBell: { step: 8, head: "d" },
   ride: { step: 8, head: "x" },
   hhOpen: { step: 9, head: "xo" },
+  hhHalf: { step: 9, head: "xh" },
   hhClosed: { step: 9, head: "x" },
+  hhPedal: { step: -1, head: "x", foot: true },
   tomHigh: { step: 7, head: "o" },
   tomMid: { step: 6, head: "o" },
   tomLow: { step: 3, head: "o" },
   snare: { step: 5, head: "o" },
-  kick: { step: 1, head: "o" },
+  sidestick: { step: 5, head: "x" },
+  kick: { step: 1, head: "o", foot: true },
 };
 const yOf = (step: number) => LINE_Y0 - step * 4;
 
@@ -57,20 +65,24 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
     for (const inst of INSTRUMENTS) {
       const level = getLevel(bar, inst, i);
       if (!level) continue;
-      const { step, head } = NOTE[inst];
+      const { step, head, foot } = NOTE[inst];
       const y = yOf(step);
       const cls = `note l${level}`;
-      if (inst !== "kick") {
+      if (!foot) {
         minY = Math.min(minY, y);
         maxY = Math.max(maxY, y);
       }
       if (head === "o") {
         els.push(<ellipse key={`${inst}${i}`} cx={x} cy={y} rx={5} ry={3.6} className={cls} transform={`rotate(-18 ${x} ${y})`} />);
+      } else if (head === "d") {
+        els.push(<path key={`${inst}${i}`} d={`M${x} ${y - 5}L${x + 5} ${y}L${x} ${y + 5}L${x - 5} ${y}Z`} className={`${cls} cross`} />);
       } else {
         els.push(
           <path key={`${inst}${i}`} d={`M${x - 4} ${y - 4}L${x + 4} ${y + 4}M${x + 4} ${y - 4}L${x - 4} ${y + 4}`} className={`${cls} cross`} />,
         );
         if (head === "xo") els.push(<circle key={`${inst}${i}o`} cx={x} cy={y - 9} r={2.6} className={`${cls} ring`} />);
+        if (head === "xh") els.push(<path key={`${inst}${i}h`} d={`M${x - 2.6} ${y - 9}h5.2M${x} ${y - 11.6}v5.2`} className={`${cls} ring`} />);
+        if (head === "xb") els.push(<rect key={`${inst}${i}b`} x={x - 6} y={y - 6} width={12} height={12} className={`${cls} ring`} />);
       }
       if (level === 3) els.push(<path key={`${inst}${i}a`} d={`M${x - 4} ${y - 15}L${x + 4} ${y - 12}L${x - 4} ${y - 9}`} className="accent-mark" />);
       if (level === 1) els.push(<text key={`${inst}${i}g`} x={x} y={y + 3.5} className="ghost-paren" textAnchor="middle">{"( )"}</text>);
@@ -80,10 +92,10 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
     if (minY !== Infinity) {
       els.push(<line key={`s${i}`} x1={x + 5} x2={x + 5} y1={maxY} y2={handStemTop[i]} className="stem" data-stem={i} />);
     }
-    const kl = getLevel(bar, "kick", i);
-    if (kl) {
-      const ky = yOf(NOTE.kick.step);
-      els.push(<line key={`k${i}`} x1={x - 5} x2={x - 5} y1={ky} y2={ky + 26} className="stem" />);
+    for (const inst of INSTRUMENTS) {
+      if (!NOTE[inst].foot || !getLevel(bar, inst, i)) continue;
+      const fy = yOf(NOTE[inst].step);
+      els.push(<line key={`k${inst}${i}`} x1={x - 5} x2={x - 5} y1={fy} y2={fy + 26} className="stem" />);
     }
   }
 

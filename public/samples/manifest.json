@@ -1,12 +1,115 @@
 {
-  "_comment": "Per instrument: files = [ghost, normal, accent]. Optional rate (pitch via playback rate) and gain. Replace files + edit this to swap the kit.",
-  "kick":     { "files": ["kick-1.flac", "kick-2.flac", "kick-3.flac"] },
-  "snare":    { "files": ["snare-1.flac", "snare-2.flac", "snare-3.flac"] },
-  "hhClosed": { "files": ["hhClosed-1.flac", "hhClosed-2.flac", "hhClosed-3.flac"] },
-  "hhOpen":   { "files": ["hhOpen-1.flac", "hhOpen-2.flac", "hhOpen-3.flac"] },
-  "tomHigh":  { "files": ["tomHigh-1.flac", "tomHigh-2.flac", "tomHigh-3.flac"] },
-  "tomMid":   { "files": ["tomMid-1.flac", "tomMid-2.flac", "tomMid-3.flac"], "rate": 0.84 },
-  "tomLow":   { "files": ["tomLow-1.flac", "tomLow-2.flac", "tomLow-3.flac"] },
-  "crash":    { "files": ["crash-1.flac", "crash-2.flac", "crash-3.flac"] },
-  "ride":     { "files": ["ride-1.flac", "ride-2.flac", "ride-3.flac"] }
+  "_comment": "Per instrument: files = [ghost, normal, accent]. Optional rate (pitch via playback rate) and gain. Regenerate from the recording with scripts/slice-samples.py.",
+  "splash": {
+    "files": [
+      "splash-1.flac",
+      "splash-2.flac",
+      "splash-3.flac"
+    ]
+  },
+  "china": {
+    "files": [
+      "china-1.flac",
+      "china-2.flac",
+      "china-3.flac"
+    ]
+  },
+  "crash2": {
+    "files": [
+      "crash2-1.flac",
+      "crash2-2.flac",
+      "crash2-3.flac"
+    ]
+  },
+  "crash": {
+    "files": [
+      "crash-1.flac",
+      "crash-2.flac",
+      "crash-3.flac"
+    ]
+  },
+  "rideBell": {
+    "files": [
+      "rideBell-1.flac",
+      "rideBell-2.flac",
+      "rideBell-3.flac"
+    ]
+  },
+  "ride": {
+    "files": [
+      "ride-1.flac",
+      "ride-2.flac",
+      "ride-3.flac"
+    ]
+  },
+  "hhOpen": {
+    "files": [
+      "hhOpen-1.flac",
+      "hhOpen-2.flac",
+      "hhOpen-3.flac"
+    ]
+  },
+  "hhHalf": {
+    "files": [
+      "hhHalf-1.flac",
+      "hhHalf-2.flac",
+      "hhHalf-3.flac"
+    ]
+  },
+  "hhClosed": {
+    "files": [
+      "hhClosed-1.flac",
+      "hhClosed-2.flac",
+      "hhClosed-3.flac"
+    ]
+  },
+  "hhPedal": {
+    "files": [
+      "hhPedal-1.flac",
+      "hhPedal-2.flac",
+      "hhPedal-3.flac"
+    ]
+  },
+  "tomHigh": {
+    "files": [
+      "tomHigh-1.flac",
+      "tomHigh-2.flac",
+      "tomHigh-3.flac"
+    ]
+  },
+  "tomMid": {
+    "files": [
+      "tomMid-1.flac",
+      "tomMid-2.flac",
+      "tomMid-3.flac"
+    ]
+  },
+  "tomLow": {
+    "files": [
+      "tomLow-1.flac",
+      "tomLow-2.flac",
+      "tomLow-3.flac"
+    ]
+  },
+  "snare": {
+    "files": [
+      "snare-1.flac",
+      "snare-2.flac",
+      "snare-3.flac"
+    ]
+  },
+  "sidestick": {
+    "files": [
+      "sidestick-1.flac",
+      "sidestick-2.flac",
+      "sidestick-3.flac"
+    ]
+  },
+  "kick": {
+    "files": [
+      "kick-1.flac",
+      "kick-2.flac",
+      "kick-3.flac"
+    ]
+  }
 }

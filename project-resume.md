@@ -6,7 +6,8 @@ Login-free web app to create/share/play drum grooves. Repo: github.com/corixien/
 - shared/groove.ts: zod schema, bar model (rows as strings of -123), helpers, tests
 - server/: Express app (app.ts), db.ts (PGlite local / pg via DATABASE_URL), API tests
 - client/src/: audio/engine.ts (Web Audio scheduler, metronome, playhead marks), components/Bars.tsx (grid editor, SVG notation, playhead), pages/, i18n.tsx (DE/EN), styles.css (flat, no transitions)
-- public/samples: CC0 kit + manifest.json (swap kit by editing manifest); scripts/fetch-samples.sh, scripts/seed.ts (demo grooves)
+- public/samples: own recorded kit (16 sounds x soft/medium/hard, 48 FLAC, 3.6 MB) + manifest.json; cut from the recording with `python3 scripts/slice-samples.py <wav>` (group names in NAMES there); scripts/seed.ts (demo grooves)
+- Instruments (shared/groove.ts, top to bottom): splash, china, crash2, crash, rideBell, ride, hhOpen, hhHalf, hhClosed, hhPedal, tomHigh, tomMid, tomLow, snare, sidestick, kick. Heads/steps in Bars.tsx NOTE; hats choke each other in engine.ts
 
 ## Current state
 V1 localhost complete: M1 scaffold/DB/API, M2 grid editor, M3 player (samples, metronome, count-in, loop, volumes, unit, playhead), M4 home (search/filter/sort/likes/plays), M5 notation preview, fork, DE/EN, dark/light. Typecheck, tests, build pass.

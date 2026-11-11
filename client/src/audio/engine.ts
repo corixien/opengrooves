@@ -23,7 +23,9 @@ interface KitEntry {
   gain: number;
 }
 
-const LEVEL_GAIN = [0, 0.75, 0.9, 1];
+/** Hats choke each other: open and half-open hats ring until the next hat hit. */
+const HATS: Instrument[] = ["hhOpen", "hhHalf", "hhClosed", "hhPedal"];
+const RINGING_HATS: Instrument[] = ["hhOpen", "hhHalf"];
 const AHEAD = 0.2;
 const TICK_MS = 25;
 
@@ -166,10 +168,10 @@ class Engine {
     src.buffer = buf;
     src.playbackRate.value = k.rate;
     const g = ctx.createGain();
-    g.gain.value = LEVEL_GAIN[level] * k.gain;
+    g.gain.value = k.gain; // soft/medium/hard are separate recordings
     src.connect(g).connect(this.grooveGain);
-    if (inst === "hhClosed" || inst === "hhOpen") this.chokeOpenHat(t);
-    if (inst === "hhOpen") this.openHat = { src, gain: g };
+    if (HATS.includes(inst)) this.chokeOpenHat(t);
+    if (RINGING_HATS.includes(inst)) this.openHat = { src, gain: g };
     this.track(src);
     src.start(t);
   }

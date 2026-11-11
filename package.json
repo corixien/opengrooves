@@ -8,8 +8,7 @@
     "build": "vite build",
     "start": "NODE_ENV=production tsx server/index.ts",
     "check": "tsc --noEmit",
-    "test": "vitest run",
-    "samples": "bash scripts/fetch-samples.sh"
+    "test": "vitest run"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",

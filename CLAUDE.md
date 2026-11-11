@@ -8,7 +8,7 @@ React + Vite + TS (client/), Express + TS (server/), shared zod schema (shared/g
 ## Commands
 - `npm run dev` client :5173 (proxies /api) + server :3001
 - `npm run check` typecheck, `npm test` vitest, `npm run build`, `npm start` (serves dist + API)
-- `npm run samples` re-downloads default CC0 kit (public/samples, swap via manifest.json)
+- `python3 scripts/slice-samples.py <recording.wav>` re-cuts the kit into public/samples (16 sounds x soft/medium/hard); swap via manifest.json
 
 ## Invariants
 - Bar rows: one string per instrument, one char per step ('-' none, '1' ghost, '2' normal, '3' accent); length = quarters(beats*4/den)*(triplet?3:4). Validated in shared/groove.ts on client and server.

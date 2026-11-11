@@ -57,14 +57,21 @@ const de = {
 
 
   // instruments
+  inst_splash: "Splash",
+  inst_china: "China",
+  inst_crash2: "Crash 2",
   inst_crash: "Crash",
+  inst_rideBell: "Ride-Bell",
   inst_ride: "Ride",
   inst_hhOpen: "HH offen",
+  inst_hhHalf: "HH halb offen",
   inst_hhClosed: "HH zu",
+  inst_hhPedal: "HH Fuß",
   inst_tomHigh: "Tom hoch",
   inst_tomMid: "Tom mitte",
   inst_tomLow: "Tom tief",
   inst_snare: "Snare",
+  inst_sidestick: "Sidestick",
   inst_kick: "Kick",
 
   // editor
@@ -183,14 +190,21 @@ const en: Record<Key, string> = {
   oddMeter: "Odd meter",
 
 
+  inst_splash: "Splash",
+  inst_china: "China",
+  inst_crash2: "Crash 2",
   inst_crash: "Crash",
+  inst_rideBell: "Ride bell",
   inst_ride: "Ride",
   inst_hhOpen: "HH open",
+  inst_hhHalf: "HH half-open",
   inst_hhClosed: "HH closed",
+  inst_hhPedal: "HH pedal",
   inst_tomHigh: "Tom high",
   inst_tomMid: "Tom mid",
   inst_tomLow: "Tom low",
   inst_snare: "Snare",
+  inst_sidestick: "Sidestick",
   inst_kick: "Kick",
 
   sectionBasics: "Basics",
