@@ -37,7 +37,7 @@ function toGroove(r: Row): Groove {
     difficulty: r.difficulty,
     focus: r.focus,
     bpm: r.bpm,
-    bars: r.bars,
+    bars: r.bars.map((b) => ({ ...b, den: b.den ?? 4 })), // rows saved before denominators existed
     forkOf: r.fork_of && r.fork_title ? { id: r.fork_of, title: r.fork_title } : null,
     plays: r.plays,
     likes: r.likes,

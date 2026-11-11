@@ -44,7 +44,11 @@ export const store = {
   setTheme: (t: Theme) => write("og.theme", t),
   getPlayer: () => read<Partial<PlayerSettings>>("og.player"),
   setPlayer: (p: Partial<PlayerSettings>) => write("og.player", p),
-  getDraft: () => read<Draft>("og.draft"),
+  getDraft(): Draft | null {
+    const d = read<Draft>("og.draft");
+    // drafts saved before denominators existed
+    return d && { ...d, bars: d.bars.map((b) => ({ ...b, den: b.den ?? 4 })) };
+  },
   setDraft: (d: Draft) => write("og.draft", d),
   clearDraft() {
     localStorage.removeItem("og.draft");

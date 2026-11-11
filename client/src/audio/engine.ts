@@ -1,4 +1,4 @@
-import { INSTRUMENTS, getLevel, stepCount, stepsPerBeat, type Bar, type Instrument, type Level } from "../../../shared/groove";
+import { INSTRUMENTS, getLevel, barQuarters, stepCount, stepsPerQuarter, type Bar, type Instrument, type Level } from "../../../shared/groove";
 
 export interface PlayerSettings {
   bpm: number;
@@ -27,31 +27,33 @@ const LEVEL_GAIN = [0, 0.75, 0.9, 1];
 const AHEAD = 0.2;
 const TICK_MS = 25;
 
-/** Events of one pass through the bars; beats are local to the pass (0 = first downbeat). */
+/** Events of one pass through the bars; beats are quarter notes local to the pass (0 = first downbeat). */
 export function buildEvents(bars: Bar[], unit: 1 | 2 | 4): { events: Ev[]; length: number } {
   const events: Ev[] = [];
   let start = 0;
   for (const bar of bars) {
-    const spb = stepsPerBeat(bar.triplet);
+    const spq = stepsPerQuarter(bar.triplet);
     const n = stepCount(bar);
+    const q = barQuarters(bar);
     for (let i = 0; i < n; i++) {
       for (const inst of INSTRUMENTS) {
         const level = getLevel(bar, inst, i);
-        if (level) events.push({ beat: start + i / spb, kind: "note", inst, level });
+        if (level) events.push({ beat: start + i / spq, kind: "note", inst, level });
       }
     }
-    const ticks = unit === 1 ? 1 : bar.triplet ? 3 : unit;
-    for (let b = 0; b < bar.beats; b++) {
-      events.push({ beat: start + b, kind: "mark" });
-      for (let k = 0; k < ticks; k++) {
-        events.push({
-          beat: start + b + k / ticks,
-          kind: "click",
-          strength: k === 0 ? (b === 0 ? 2 : 1) : 0,
-        });
-      }
+    // metronome: one click per quarter / eighth / sixteenth (thirds of a quarter in triplet bars)
+    const beatLen = 4 / bar.den;
+    const clickLen = unit === 1 ? 1 : bar.triplet ? 1 / 3 : 1 / unit;
+    const clicks = Math.round(q / clickLen);
+    for (let k = 0; k < clicks; k++) {
+      const t = k * clickLen;
+      const onBeat = Math.abs(t / beatLen - Math.round(t / beatLen)) < 1e-9;
+      events.push({ beat: start + t, kind: "click", strength: k === 0 ? 2 : onBeat ? 1 : 0 });
     }
-    start += bar.beats;
+    // position marks for the playhead: at least every quarter note
+    const markLen = Math.min(1, beatLen);
+    for (let t = 0; t < q - 1e-9; t += markLen) events.push({ beat: start + t, kind: "mark" });
+    start += q;
   }
   events.push({ beat: start, kind: "mark" });
   events.sort((a, b) => a.beat - b.beat);
@@ -217,13 +219,14 @@ class Engine {
     await this.load();
     const ctx = this.ensureCtx();
     await ctx.resume();
+    if (this.playing) return; // another start() won the race while loading
     this.ended = false;
     this.marks = [];
     this.lastTime = ctx.currentTime + 0.12;
     this.lastBeat = 0;
     this.idx = 0;
     if (this.settings.countIn) {
-      const n = Math.max(2, this.bars[0]?.beats ?? 4);
+      const n = Math.max(2, Math.round(this.bars[0] ? barQuarters(this.bars[0]) : 4));
       const events: Ev[] = [];
       for (let k = 0; k < n; k++) {
         events.push({ beat: k - n, kind: "mark" }, { beat: k - n, kind: "click", strength: k === 0 ? 2 : 1 });

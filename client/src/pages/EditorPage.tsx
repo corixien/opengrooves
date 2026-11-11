@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   DIFFICULTIES,
+  DENOMINATORS,
   MAX_BARS,
+  canTriplet,
+  maxBeats,
   MAX_FOCUS,
   MAX_BPM,
   MIN_BPM,
@@ -102,7 +105,15 @@ export function EditorPage() {
             label={t("beatsPerBar")}
             value={bar.beats}
             onChange={(beats) => editBar(i, (b) => resizeBar(b, beats, b.triplet))}
-            options={Array.from({ length: 8 }, (_, k) => ({ value: k + 1, label: `${k + 1}/4` }))}
+            options={Array.from({ length: maxBeats(bar.den) }, (_, k) => ({ value: k + 1, label: String(k + 1) }))}
+          />
+          <span className="slash">/</span>
+          <Select
+            className="den"
+            label={t("noteValue")}
+            value={bar.den}
+            onChange={(den) => editBar(i, (b) => resizeBar(b, Math.min(b.beats, maxBeats(den)), b.triplet && canTriplet(den), den))}
+            options={DENOMINATORS.map((d) => ({ value: d, label: String(d) }))}
           />
           <span className="spacer" />
           <button
@@ -125,7 +136,7 @@ export function EditorPage() {
           <button className={!bar.triplet ? "on" : ""} onClick={() => editBar(i, (b) => resizeBar(b, b.beats, false))}>
             {t("gridSixteenth")}
           </button>
-          <button className={bar.triplet ? "on" : ""} onClick={() => editBar(i, (b) => resizeBar(b, b.beats, true))}>
+          <button className={bar.triplet ? "on" : ""} disabled={!canTriplet(bar.den)} onClick={() => editBar(i, (b) => resizeBar(b, b.beats, true))}>
             {t("gridTriplet")}
           </button>
         </div>
@@ -231,7 +242,7 @@ export function EditorPage() {
             <button
               className="add-bar"
               disabled={form.bars.length >= MAX_BARS}
-              onClick={() => setBars((bs) => [...bs, emptyBar(bs[bs.length - 1]?.beats ?? 4, bs[bs.length - 1]?.triplet ?? false)])}
+              onClick={() => setBars((bs) => [...bs, emptyBar(bs[bs.length - 1]?.beats ?? 4, bs[bs.length - 1]?.triplet ?? false, bs[bs.length - 1]?.den ?? 4)])}
             >
               <span className="plus">+</span>
               {t("addBar")}

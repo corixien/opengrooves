@@ -3,8 +3,9 @@ import {
   INSTRUMENTS,
   getLevel,
   setLevel,
+  barQuarters,
   stepCount,
-  stepsPerBeat,
+  stepsPerQuarter,
   type Bar,
   type Instrument,
   type Level,
@@ -16,7 +17,7 @@ const PAD = 16;
 const BEAT_W = 72;
 const H = 104;
 const LINE_Y0 = 70; // y of bottom staff line (E4)
-const barWidth = (bar: Bar) => PAD * 2 + bar.beats * BEAT_W;
+const barWidth = (bar: Bar) => PAD * 2 + Math.max(barQuarters(bar) * BEAT_W, stepCount(bar) * 18);
 
 /** Diatonic step above the bottom staff line and head style per instrument. */
 const NOTE: Record<Instrument, { step: number; head: "x" | "o" | "xo" }> = {
@@ -33,7 +34,7 @@ const NOTE: Record<Instrument, { step: number; head: "x" | "o" | "xo" }> = {
 const yOf = (step: number) => LINE_Y0 - step * 4;
 
 function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
-  const spb = stepsPerBeat(bar.triplet);
+  const spb = stepsPerQuarter(bar.triplet); // beam group = one quarter note
   const n = stepCount(bar);
   const w = barWidth(bar);
   const xOf = (i: number) => x0 + PAD + ((i + 0.5) / n) * (w - PAD * 2);
@@ -86,7 +87,7 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
   }
 
   // beams for hand notes per beat
-  for (let b = 0; b < bar.beats; b++) {
+  for (let b = 0; b < Math.ceil(n / spb); b++) {
     const cols: number[] = [];
     for (let s = 0; s < spb; s++) if (handStemTop[b * spb + s] !== undefined) cols.push(b * spb + s);
     if (cols.length < 2) continue;
@@ -111,18 +112,63 @@ export function NotationBar({ bar }: { bar: Bar }) {
   );
 }
 
-/** First bars in one compact SVG for cards. */
-export function NotationPreview({ bars, max = 2 }: { bars: Bar[]; max?: number }) {
-  const shown = bars.slice(0, max);
+/**
+ * Card preview: all bars in one SVG, the viewport shows the first two bars. While playing, the
+ * viewport follows the playhead (viewBox shifts) when there are more than two bars.
+ */
+export function NotationPreview({ bars, playing = false, getPosition }: { bars: Bar[]; playing?: boolean; getPosition?: () => number | null }) {
+  const svg = useRef<SVGSVGElement>(null);
+  const head = useRef<SVGLineElement>(null);
+  const widths = bars.map(barWidth);
+  const total = widths.reduce((a, b) => a + b, 0);
+  const viewW = widths[0] + (widths[1] ?? 0);
   let x = 0;
-  const parts = shown.map((bar, i) => {
+  const parts = bars.map((bar, i) => {
     const el = <NotationContent key={i} bar={bar} x0={x} />;
-    x += barWidth(bar);
+    x += widths[i];
     return el;
   });
+
+  useEffect(() => {
+    const reset = () => {
+      svg.current?.setAttribute("viewBox", `0 0 ${viewW} ${H}`);
+      head.current?.setAttribute("visibility", "hidden");
+    };
+    if (!playing || !getPosition) return reset();
+    let raf = 0;
+    const frame = () => {
+      raf = requestAnimationFrame(frame);
+      const pos = getPosition();
+      if (pos === null || pos < 0) return head.current?.setAttribute("visibility", "hidden");
+      let start = 0;
+      let off = 0;
+      for (let i = 0; i < bars.length; i++) {
+        const q = barQuarters(bars[i]);
+        if (pos < start + q || i === bars.length - 1) {
+          const frac = Math.min(1, Math.max(0, (pos - start) / q));
+          const px = off + PAD + frac * (widths[i] - PAD * 2);
+          const vx = Math.min(Math.max(0, px - viewW * 0.3), Math.max(0, total - viewW));
+          svg.current?.setAttribute("viewBox", `${vx} 0 ${viewW} ${H}`);
+          head.current?.setAttribute("x1", String(px));
+          head.current?.setAttribute("x2", String(px));
+          head.current?.setAttribute("visibility", "visible");
+          return;
+        }
+        start += q;
+        off += widths[i];
+      }
+    };
+    frame();
+    return () => {
+      cancelAnimationFrame(raf);
+      reset();
+    };
+  }, [playing, getPosition, viewW, total]);
+
   return (
-    <svg className="notation preview" viewBox={`0 0 ${x} ${H}`} preserveAspectRatio="xMinYMid meet" role="img" aria-hidden="true">
+    <svg ref={svg} className="notation preview" viewBox={`0 0 ${viewW} ${H}`} preserveAspectRatio="xMinYMid meet" role="img" aria-hidden="true">
       {parts}
+      <line ref={head} className="svg-playhead" x1={0} x2={0} y1={4} y2={H - 4} visibility="hidden" />
     </svg>
   );
 }
@@ -139,8 +185,8 @@ interface GridProps {
 }
 
 const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProps) {
-  const spb = stepsPerBeat(bar.triplet);
   const n = stepCount(bar);
+  const perBeat = n / bar.beats; // steps per beat of the time signature
   const paint = useRef<Level | null>(null);
 
   const apply = (el: Element | null) => {
@@ -180,7 +226,7 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
     >
       <div className="grid-head">
         {Array.from({ length: bar.beats }, (_, b) => (
-          <span key={b} className="beat-num" style={{ width: `calc(var(--cell) * ${spb})` }}>
+          <span key={b} className="beat-num" style={{ width: `calc(var(--cell) * ${perBeat})` }}>
             {b + 1}
           </span>
         ))}
@@ -195,7 +241,7 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
                 data-cell
                 data-inst={inst}
                 data-step={i}
-                className={`cell${i % spb === 0 ? " beat-start" : ""}${level ? ` l${level}` : ""}`}
+                className={`cell${(i * bar.beats) % n === 0 ? " beat-start" : ""}${level ? ` l${level}` : ""}`}
               >
                 {level ? <i /> : null}
               </span>
@@ -247,9 +293,9 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
       let start = 0;
       const bs = barsRef.current;
       for (let i = 0; i < bs.length; i++) {
-        const end = start + bs[i].beats;
+        const end = start + barQuarters(bs[i]);
         if (pos < end || i === bs.length - 1) {
-          const frac = Math.min(1, Math.max(0, (pos - start) / bs[i].beats));
+          const frac = Math.min(1, Math.max(0, (pos - start) / barQuarters(bs[i])));
           const ph = heads.current[i];
           const sc = scroller.current;
           if (ph) {
@@ -271,7 +317,7 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
   }, [playing, getPosition]);
 
   return (
-    <div className={`rhythm ${mode}${renderHeader ? " with-head" : ""}`}>
+    <div className={`rhythm view-${mode}${renderHeader ? " with-head" : ""}`}>
       {mode === "grid" && (
         <div className="labels" aria-hidden="true">
           {INSTRUMENTS.map((inst) => (

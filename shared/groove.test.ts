@@ -19,6 +19,22 @@ describe("groove model", () => {
     expect(barSchema.safeParse({ ...tri, beats: 9 }).success).toBe(false);
   });
 
+  it("supports other time signatures", () => {
+    const six8 = emptyBar(6, false, 8);
+    expect(stepCount(six8)).toBe(12); // 3 quarters * 4
+    expect(barSchema.safeParse(six8).success).toBe(true);
+    expect(barSchema.safeParse({ ...emptyBar(17, false, 8) }).success).toBe(false);
+    expect(barSchema.safeParse({ ...emptyBar(9, false, 4) }).success).toBe(false);
+    expect(barSchema.safeParse({ ...emptyBar(4, true, 8) }).success).toBe(false);
+    expect(barSchema.safeParse({ beats: 4, triplet: false, rows: {} }).data?.den).toBe(4);
+    const kicked = setLevel(six8, "kick", 4, 2);
+    const wide = resizeBar(kicked, 3, false, 4); // 3/4 -> 12 steps, same grid
+    expect(wide.rows.kick?.[4]).toBe("2");
+    expect(resizeBar(setLevel(emptyBar(4), "kick", 4, 2), 2, true).rows.kick).toBe("---2--");
+    const { length } = buildEvents([emptyBar(3, false, 16), emptyBar(2, false, 2)], 1);
+    expect(length).toBe(0.75 + 4);
+  });
+
   it("builds ordered events with a closing mark", () => {
     const b = setLevel(emptyBar(2), "kick", 0, 2);
     const { events, length } = buildEvents([b, b], 1);

@@ -18,8 +18,12 @@ export const STEP_CHARS = "-123";
 export type Level = 0 | 1 | 2 | 3;
 
 export const MAX_BARS = 20;
-export const MIN_BEATS = 1;
-export const MAX_BEATS = 8;
+export const DENOMINATORS = [1, 2, 4, 8, 16] as const;
+export type Den = (typeof DENOMINATORS)[number];
+/** A bar is at most 8 quarter notes long and has at most 16 beats. */
+export const maxBeats = (den: number) => Math.min(16, 2 * den);
+/** Triplets only for denominators whose beat is a multiple of a quarter note. */
+export const canTriplet = (den: number) => den <= 4;
 export const MIN_BPM = 40;
 export const MAX_BPM = 240;
 
@@ -45,16 +49,23 @@ export const MAX_FOCUS = 4;
 export type Tag = (typeof TAGS)[number];
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
-export function stepsPerBeat(triplet: boolean): number {
+export function barQuarters(bar: { beats: number; den: Den }): number {
+  return (bar.beats * 4) / bar.den;
+}
+
+/** Grid resolution: 16th notes (4 per quarter) or triplet eighths (3 per quarter). */
+export function stepsPerQuarter(triplet: boolean): number {
   return triplet ? 3 : 4;
 }
 
-export function stepCount(bar: { beats: number; triplet: boolean }): number {
-  return bar.beats * stepsPerBeat(bar.triplet);
+export function stepCount(bar: { beats: number; den: Den; triplet: boolean }): number {
+  return Math.round(barQuarters(bar) * stepsPerQuarter(bar.triplet));
 }
 
 export interface Bar {
+  /** Time signature numerator (beats) and denominator. */
   beats: number;
+  den: Den;
   triplet: boolean;
   /** Only non-empty instruments are present. Each string has stepCount(bar) chars. */
   rows: Partial<Record<Instrument, string>>;
@@ -62,11 +73,14 @@ export interface Bar {
 
 export const barSchema = z
   .object({
-    beats: z.number().int().min(MIN_BEATS).max(MAX_BEATS),
+    beats: z.number().int().min(1).max(16),
+    den: z.union(DENOMINATORS.map((d) => z.literal(d)) as unknown as [z.ZodLiteral<1>, z.ZodLiteral<2>, z.ZodLiteral<4>, z.ZodLiteral<8>, z.ZodLiteral<16>]).default(4),
     triplet: z.boolean(),
     rows: z.partialRecord(z.enum(INSTRUMENTS), z.string()),
   })
   .superRefine((bar, ctx) => {
+    if (bar.beats > maxBeats(bar.den)) ctx.addIssue({ code: "custom", message: "too long" });
+    if (bar.triplet && !canTriplet(bar.den)) ctx.addIssue({ code: "custom", message: "no triplets" });
     const n = stepCount(bar);
     for (const [inst, row] of Object.entries(bar.rows)) {
       if (row.length !== n || !/^[-123]+$/.test(row)) {
@@ -98,8 +112,8 @@ export interface Groove extends Omit<GrooveInput, "forkOf"> {
   forkOf: { id: string; title: string } | null;
 }
 
-export function emptyBar(beats = 4, triplet = false): Bar {
-  return { beats, triplet, rows: {} };
+export function emptyBar(beats = 4, triplet = false, den: Den = 4): Bar {
+  return { beats, den, triplet, rows: {} };
 }
 
 export function getLevel(bar: Bar, inst: Instrument, step: number): Level {
@@ -119,23 +133,22 @@ export function setLevel(bar: Bar, inst: Instrument, step: number, level: Level)
   return { ...bar, rows };
 }
 
-/** Change beats/triplet; notes are kept where the step still exists, mapped by beat position. */
-export function resizeBar(bar: Bar, beats: number, triplet: boolean): Bar {
-  const oldSpb = stepsPerBeat(bar.triplet);
-  const newSpb = stepsPerBeat(triplet);
+/** Change time signature / grid; notes are kept where their position exists on the new grid. */
+export function resizeBar(bar: Bar, beats: number, triplet: boolean, den: Den = bar.den): Bar {
+  const next = { beats, den, triplet };
+  const oldSpq = stepsPerQuarter(bar.triplet);
+  const newSpq = stepsPerQuarter(triplet);
+  const n = stepCount(next);
   const rows: Bar["rows"] = {};
   for (const [inst, row] of Object.entries(bar.rows) as [Instrument, string][]) {
-    const out = "-".repeat(beats * newSpb).split("");
+    const out = "-".repeat(n).split("");
     for (let i = 0; i < row.length; i++) {
       if (row[i] === "-") continue;
-      const beat = Math.floor(i / oldSpb);
-      const sub = i % oldSpb;
-      // keep downbeat-aligned positions: sub 0 stays, others only when the grid matches
-      const ns = triplet === bar.triplet ? sub : sub === 0 ? 0 : -1;
-      if (beat < beats && ns >= 0) out[beat * newSpb + ns] = row[i];
+      const ns = (i / oldSpq) * newSpq;
+      if (Math.abs(ns - Math.round(ns)) < 1e-9 && Math.round(ns) < n) out[Math.round(ns)] = row[i];
     }
     const joined = out.join("");
     if (!/^-+$/.test(joined)) rows[inst] = joined;
   }
-  return { beats, triplet, rows };
+  return { ...next, rows };
 }

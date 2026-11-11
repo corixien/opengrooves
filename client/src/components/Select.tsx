@@ -11,10 +11,12 @@ interface Props<T extends string | number> {
   onChange: (v: T) => void;
   label: string;
   className?: string;
+  /** Open the list aligned to the right edge (for controls at the right side of the page). */
+  alignRight?: boolean;
 }
 
 /** Styled dropdown (listbox) replacing the native <select>. */
-export function Select<T extends string | number>({ value, options, onChange, label, className = "" }: Props<T>) {
+export function Select<T extends string | number>({ value, options, onChange, label, className = "", alignRight = false }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [up, setUp] = useState(false);
@@ -84,7 +86,7 @@ export function Select<T extends string | number>({ value, options, onChange, la
         </svg>
       </button>
       {open && (
-        <ul className={`select-list${up ? " up" : ""}`} role="listbox" id={id} ref={list} aria-label={label}>
+        <ul className={`select-list${up ? " up" : ""}${alignRight ? " right" : ""}`} role="listbox" id={id} ref={list} aria-label={label}>
           {options.map((o, i) => (
             <li
               key={String(o.value)}

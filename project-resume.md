@@ -17,6 +17,9 @@ Custom Select component, Lexend font (@fontsource-variable/lexend), panel layout
 ## Update (round 3)
 Bars side by side in one horizontal scroller (follows playhead), click cycle normal -> accent -> ghost -> off, continuous playhead (extrapolated between beat marks), equal-height panels, #root flex so the dock sits at the bottom, rounded logo.
 
+## Update (round 4)
+Time signatures n/den (den 1,2,4,8,16; max 8 quarters, max 16 beats; triplets only den<=4; BPM = quarters/min), card play buttons (one at a time, no metronome), preview shows first 2 bars and follows playhead, language dropdown, flat dropdown borders. Fixed .grid class collision that broke horizontal scroll.
+
 ## Next / open
 - Deploy: Render (web service: build `npm run build`, start `npm start`) + Neon (DATABASE_URL; never test against branch production)
 - Possible: drag-paint on touch, MIDI/PDF export, report/moderation, real engraving polish (rests, flags)

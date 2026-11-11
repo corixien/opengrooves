@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Route, Routes } from "react-router-dom";
-import { useI18n } from "./i18n";
+import { Select } from "./components/Select";
+import { useI18n, type Lang } from "./i18n";
 import { EditorPage } from "./pages/EditorPage";
 import { GroovePage } from "./pages/GroovePage";
 import { Home } from "./pages/Home";
@@ -36,9 +37,17 @@ export function App() {
             <NavLink to="/new">{t("navNew")}</NavLink>
           </nav>
           <span className="spacer" />
-          <button className="btn small" onClick={() => setLang(lang === "de" ? "en" : "de")} aria-label="Language">
-            {lang === "de" ? "EN" : "DE"}
-          </button>
+          <Select
+            className="lang"
+            alignRight
+            label="Language"
+            value={lang}
+            onChange={(l) => setLang(l as Lang)}
+            options={[
+              { value: "de", label: "Deutsch" },
+              { value: "en", label: "English" },
+            ]}
+          />
           <button className="btn small" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
             {theme === "dark" ? t("themeLight") : t("themeDark")}
           </button>
