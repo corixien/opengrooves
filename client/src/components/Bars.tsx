@@ -13,11 +13,12 @@ import {
 import { useI18n } from "../i18n";
 
 // ---------- notation geometry (SVG units) ----------
-const PAD = 16;
+const LEAD = 14; // space between the bar line and the first note step
 const BEAT_W = 72;
 const H = 104;
 const LINE_Y0 = 70; // y of bottom staff line (E4)
-const barWidth = (bar: Bar) => PAD * 2 + Math.max(barQuarters(bar) * BEAT_W, stepCount(bar) * 18);
+/** Bar line to bar line; time maps linearly onto it (from LEAD), so the playhead crosses bars without jumping. */
+const barWidth = (bar: Bar) => Math.max(barQuarters(bar) * BEAT_W, stepCount(bar) * 18);
 
 /** Diatonic step above the bottom staff line and head style per instrument. */
 const NOTE: Record<Instrument, { step: number; head: "x" | "o" | "xo" }> = {
@@ -37,7 +38,7 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
   const spb = stepsPerQuarter(bar.triplet); // beam group = one quarter note
   const n = stepCount(bar);
   const w = barWidth(bar);
-  const xOf = (i: number) => x0 + PAD + ((i + 0.5) / n) * (w - PAD * 2);
+  const xOf = (i: number) => x0 + LEAD + (i / n) * w;
   const els: ReactNode[] = [];
 
   // staff lines + bar lines
@@ -146,7 +147,7 @@ export function NotationPreview({ bars, playing = false, getPosition }: { bars: 
         const q = barQuarters(bars[i]);
         if (pos < start + q || i === bars.length - 1) {
           const frac = Math.min(1, Math.max(0, (pos - start) / q));
-          const px = off + PAD + frac * (widths[i] - PAD * 2);
+          const px = off + LEAD + frac * widths[i];
           const vx = Math.min(Math.max(0, px - viewW * 0.3), Math.max(0, total - viewW));
           svg.current?.setAttribute("viewBox", `${vx} 0 ${viewW} ${H}`);
           head.current?.setAttribute("x1", String(px));
@@ -226,7 +227,7 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
     >
       <div className="grid-head">
         {Array.from({ length: bar.beats }, (_, b) => (
-          <span key={b} className="beat-num" style={{ width: `calc(var(--cell) * ${perBeat})` }}>
+          <span key={b} className="beat-num" style={{ flex: `${perBeat} 1 0` }}>
             {b + 1}
           </span>
         ))}
@@ -300,7 +301,7 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
           const sc = scroller.current;
           if (ph) {
             ph.style.display = "block";
-            ph.style.left = `calc(var(--label) + var(--w) * ${frac})`;
+            ph.style.left = `calc(var(--lead) + 100% * ${frac})`;
             if (sc) {
               const x = ph.getBoundingClientRect().left - sc.getBoundingClientRect().left + sc.scrollLeft;
               const target = Math.max(0, x - sc.clientWidth * 0.3);
@@ -327,11 +328,11 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
       )}
       <div className="bars" ref={scroller}>
         {bars.map((bar, i) => {
-          const w = mode === "grid" ? `calc(var(--cell) * ${stepCount(bar)})` : `${barWidth(bar) - PAD * 2}px`;
+          const w = mode === "grid" ? `calc(var(--cell) * ${stepCount(bar)})` : `${barWidth(bar)}px`;
           return (
-            <div key={i} className="bar-block">
+            <div key={i} className="bar-block" style={{ ["--w" as string]: w, ["--lead" as string]: mode === "grid" ? "0px" : `${LEAD}px` }}>
               {renderHeader ? renderHeader(i) : <span className="bar-no">{i + 1}</span>}
-              <div className="bar-inner" style={{ ["--w" as string]: w, ["--label" as string]: mode === "grid" ? "0px" : `${PAD}px` }}>
+              <div className="bar-inner">
                 {mode === "grid" ? (
                   <BarGrid bar={bar} editable={editable} onEdit={onEdit ? (u) => onEdit(i, u) : undefined} onHit={onHit} />
                 ) : (
