@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
-import { DIFFICULTIES, FOCUS, TAGS, grooveInputSchema, type Groove } from "../shared/groove.ts";
+import { DIFFICULTIES, FOCUS_ID, TAGS, grooveInputSchema, type Groove } from "../shared/groove.ts";
 import type { Db } from "./db.ts";
 
 interface Row {
@@ -55,10 +55,16 @@ const csv = <T extends string>(values: readonly T[]) =>
     .transform((s) => (s ? s.split(",") : []))
     .pipe(z.array(z.enum(values as [T, ...T[]])));
 
+const focusIds = z
+  .string()
+  .optional()
+  .transform((s) => (s ? s.split(",") : []))
+  .pipe(z.array(z.string().regex(FOCUS_ID)).max(10));
+
 const listQuery = z.object({
   q: z.string().trim().max(80).default(""),
   tags: csv(TAGS),
-  focus: csv(FOCUS),
+  focus: focusIds,
   difficulty: z.enum(DIFFICULTIES).optional(),
   minBpm: z.coerce.number().int().min(0).optional(),
   maxBpm: z.coerce.number().int().min(0).optional(),
@@ -127,6 +133,13 @@ export function createApp(db: Db) {
     res.json({ items: rows.map(toGroove), total: Number(n), pageSize: PAGE_SIZE });
   });
 
+  api.get("/options", async (_req, res) => {
+    const focus = await db.query<{ id: string; label_de: string; label_en: string }>(
+      "select id, label_de, label_en from focus_options order by sort, id",
+    );
+    res.json({ focus: focus.map((f) => ({ id: f.id, de: f.label_de, en: f.label_en })) });
+  });
+
   api.get("/grooves/:id", async (req, res) => {
     const rows = await db.query<Row>(`select ${COLUMNS} from grooves where id = $1`, [req.params.id]);
     if (!rows[0]) return void res.status(404).json({ error: "not_found" });
@@ -135,6 +148,10 @@ export function createApp(db: Db) {
 
   api.post("/grooves", createLimit, async (req, res) => {
     const g = grooveInputSchema.parse(req.body);
+    if (g.focus.length) {
+      const known = await db.query<{ id: string }>("select id from focus_options where id = any($1::text[])", [g.focus]);
+      if (known.length !== new Set(g.focus).size) return void res.status(400).json({ error: "unknown_focus" });
+    }
     let forkTitle: string | null = null;
     let forkOf: string | null = null;
     if (g.forkOf) {

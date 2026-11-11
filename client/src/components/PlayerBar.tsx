@@ -1,6 +1,7 @@
 import { MAX_BPM, MIN_BPM } from "../../../shared/groove";
 import type { PlayerState } from "../audio/usePlayer";
 import { useI18n } from "../i18n";
+import { Select } from "./Select";
 
 interface Props {
   player: PlayerState;
@@ -57,14 +58,20 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
           <input type="checkbox" checked={s.loop} onChange={(e) => update({ loop: e.target.checked })} />
           {t("loop")}
         </label>
-        <label className="field inline">
+        <div className="field inline">
           <span>{t("clickUnit")}</span>
-          <select value={s.metroUnit} onChange={(e) => update({ metroUnit: Number(e.target.value) as 1 | 2 | 4 })}>
-            <option value={1}>{t("unitQuarter")}</option>
-            <option value={2}>{t("unitEighth")}</option>
-            <option value={4}>{t("unitSixteenth")}</option>
-          </select>
-        </label>
+          <Select
+            className="unit"
+            label={t("clickUnit")}
+            value={s.metroUnit}
+            onChange={(metroUnit) => update({ metroUnit })}
+            options={[
+              { value: 1, label: t("unitQuarter") },
+              { value: 2, label: t("unitEighth") },
+              { value: 4, label: t("unitSixteenth") },
+            ]}
+          />
+        </div>
       </div>
     </div>
   );

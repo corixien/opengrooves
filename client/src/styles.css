@@ -12,7 +12,7 @@
   --cell: 26px;
   --label-w: 84px;
   --r: 6px;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Lexend Variable", Lexend, system-ui, sans-serif;
   color-scheme: light;
 }
 [data-theme="dark"] {
@@ -125,18 +125,12 @@ textarea { resize: vertical; width: 100%; }
 .empty { padding: 2rem 0; display: grid; gap: 0.8rem; justify-items: start; }
 
 /* editor */
-.form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 1rem 0; padding: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
-.form .wide { grid-column: 1 / -1; }
-.brushbar { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; margin: 1rem 0 0.6rem; position: sticky; top: 52px; z-index: 10; background: var(--bg); padding: 0.4rem 0; }
 .hint { font-size: 0.85rem; }
 .dot { display: inline-block; background: var(--ink); border-radius: 2px; }
 .on .dot { background: var(--bg); }
 .dot.l1 { width: 6px; height: 6px; border-radius: 50%; }
 .dot.l2 { width: 10px; height: 10px; }
 .dot.l3 { width: 14px; height: 14px; background: var(--accent) !important; }
-.actions { display: flex; align-items: center; gap: 0.7rem; margin: 1rem 0 7rem; flex-wrap: wrap; }
-.editor, .detail { padding-bottom: 9rem; }
-.editor .actions { margin-bottom: 1rem; }
 
 /* bars */
 .bars { display: flex; flex-direction: column; gap: 0.8rem; }
@@ -189,7 +183,7 @@ svg.notation.preview { width: 100%; height: 100%; }
 .view-switch { margin: 1rem 0 0.6rem; }
 
 /* player */
-.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--line); }
+.dock { position: sticky; bottom: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--line); }
 .player { max-width: 1100px; margin: 0 auto; padding: 0.7rem 1rem; display: flex; gap: 1.1rem; align-items: center; flex-wrap: wrap; }
 .player .play { min-width: 8.5rem; justify-content: center; font-size: 1rem; padding: 0.7rem 1rem; }
 .tempo { min-width: 170px; }
@@ -203,9 +197,55 @@ svg.notation.preview { width: 100%; height: 100%; }
 @media (max-width: 720px) {
   :root { --cell: 30px; --label-w: 70px; }
   .form { grid-template-columns: 1fr; }
-  .brushbar { top: 48px; }
+  .panels { grid-template-columns: 1fr; }
   .player { gap: 0.7rem; padding: 0.5rem 0.7rem; }
   .player .play { min-width: 6rem; }
   .mix input[type="range"] { width: 70px; }
-  .editor, .detail { padding-bottom: 16rem; }
 }
+
+/* panels */
+.container { padding-bottom: 2rem; }
+.panels { display: grid; grid-template-columns: 3fr 2fr; gap: 1rem; margin-bottom: 1rem; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 0; margin-bottom: 1rem; }
+.panels .panel { margin-bottom: 0; }
+.panel-head { display: flex; align-items: center; gap: 0.7rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.panel-head h2 { margin: 0; font-size: 1rem; letter-spacing: -0.01em; }
+.step { width: 1.6rem; height: 1.6rem; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-weight: 800; font-size: 0.85rem; border-radius: 4px; }
+.panel > .hint, .panel > .bars, .panel > .add-bar, .panel > .detail-head, .panel > .meta, .panel > .chips, .panel > .desc, .panel > .view-switch { margin-left: 1rem; margin-right: 1rem; }
+.panel > .detail-head { margin-top: 1rem; }
+.panel > .bars { margin-bottom: 1rem; }
+.panel > .view-switch { margin-top: 1rem; }
+.panel > .chips.static { margin-bottom: 0.2rem; }
+.panel > .desc:last-child, .panel > .bars:last-child { margin-bottom: 1rem; }
+.panel > .hint { margin-top: 0.8rem; margin-bottom: 0.8rem; }
+.panel > .add-bar { margin-top: 0.2rem; margin-bottom: 1rem; }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; }
+.form.single { grid-template-columns: 1fr; }
+.form .wide { grid-column: 1 / -1; }
+.brushbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.publish { display: flex; justify-content: flex-end; align-items: center; gap: 0.8rem; margin: 0 0 1rem; flex-wrap: wrap; }
+.btn.big { padding: 0.8rem 1.6rem; font-size: 1.05rem; }
+.bar-block { border-radius: 4px; background: var(--bg); }
+.bar-head { padding-bottom: 0.5rem; border-bottom: 1px solid var(--line); }
+.grid .label, .label { background: var(--bg); }
+.cell { border-color: var(--bg); }
+.cell.beat-start { border-left-color: var(--bg); }
+.bars.notes .bar-block { background: var(--surface); }
+.bars.notes .label { background: var(--surface); }
+
+/* custom select */
+.select { position: relative; display: inline-block; min-width: 0; }
+.select-btn { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 0.5rem 0.65rem; display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; width: 100%; min-width: 7rem; cursor: pointer; text-align: left; }
+.select-btn:hover, .select-btn[aria-expanded="true"] { border-color: var(--accent); }
+.select-btn svg { flex: none; color: var(--muted); }
+.field .select { display: block; }
+.field .select-btn { min-width: 0; }
+.field.inline .select-btn { padding: 0.25rem 0.5rem; min-width: 3.4rem; }
+.select-list { position: absolute; z-index: 60; left: 0; min-width: 100%; max-height: 16rem; overflow-y: auto; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r); box-shadow: 0 6px 0 rgba(0,0,0,0.12); }
+.select-list.up { bottom: 100%; margin: 0 0 4px; }
+.select-list li { padding: 0.45rem 0.65rem; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 0.92rem; }
+.select-list li.act { background: var(--cell-off); }
+.select-list li.sel { background: var(--accent); color: #fff; }
+.toolbar .sort .select-btn { padding: 0.55rem 0.8rem; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { display: none; }

@@ -1,28 +1,25 @@
-import { useI18n, type Key } from "../i18n";
-
-interface Props<T extends string> {
-  options: readonly T[];
-  value: T[];
-  onChange: (v: T[]) => void;
+interface Props {
+  options: readonly { id: string; label: string }[];
+  value: string[];
+  onChange: (v: string[]) => void;
   max?: number;
 }
 
-export function Chips<T extends string>({ options, value, onChange, max }: Props<T>) {
-  const { t } = useI18n();
+export function Chips({ options, value, onChange, max }: Props) {
   return (
     <div className="chips">
       {options.map((o) => {
-        const on = value.includes(o);
+        const on = value.includes(o.id);
         return (
           <button
-            key={o}
+            key={o.id}
             type="button"
             className={`chip${on ? " on" : ""}`}
             aria-pressed={on}
             disabled={!on && max !== undefined && value.length >= max}
-            onClick={() => onChange(on ? value.filter((v) => v !== o) : [...value, o])}
+            onClick={() => onChange(on ? value.filter((v) => v !== o.id) : [...value, o.id])}
           >
-            {t(o as unknown as Key)}
+            {o.label}
           </button>
         );
       })}

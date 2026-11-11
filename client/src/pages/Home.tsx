@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { DIFFICULTIES, FOCUS, TAGS, type Groove } from "../../../shared/groove";
+import { DIFFICULTIES, TAGS, type Groove } from "../../../shared/groove";
 import { api, type ListFilters } from "../api";
 import { Chips } from "../components/Chips";
 import { GrooveCard } from "../components/GrooveCard";
+import { Select } from "../components/Select";
+import { useOptions } from "../options";
 import { useI18n, type Key } from "../i18n";
 
 const EMPTY: ListFilters = {
@@ -20,6 +22,7 @@ const EMPTY: ListFilters = {
 
 export function Home() {
   const { t } = useI18n();
+  const { focus } = useOptions();
   const [f, setF] = useState<ListFilters>(EMPTY);
   const [qInput, setQInput] = useState("");
   const [open, setOpen] = useState(false);
@@ -69,11 +72,17 @@ export function Home() {
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchPlaceholder")}
         />
-        <select value={f.sort} onChange={(e) => set({ sort: e.target.value as ListFilters["sort"] })} aria-label={t("sortBy")}>
-          <option value="new">{t("sortNew")}</option>
-          <option value="popular">{t("sortPopular")}</option>
-          <option value="played">{t("sortPlayed")}</option>
-        </select>
+        <Select
+          className="sort"
+          label={t("sortBy")}
+          value={f.sort}
+          onChange={(sort) => set({ sort })}
+          options={[
+            { value: "new", label: t("sortNew") },
+            { value: "popular", label: t("sortPopular") },
+            { value: "played", label: t("sortPlayed") },
+          ]}
+        />
         <button className={`btn${open ? " active" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open}>
           {t("filters")}
           {active > 0 && <b className="badge">{active}</b>}
@@ -84,24 +93,25 @@ export function Home() {
         <section className="filters">
           <div className="filter-group">
             <h4>{t("tags")}</h4>
-            <Chips options={TAGS} value={f.tags as (typeof TAGS)[number][]} onChange={(v) => set({ tags: v })} />
+            <Chips options={TAGS.map((id) => ({ id, label: t(id as Key) }))} value={f.tags} onChange={(v) => set({ tags: v })} />
           </div>
           <div className="filter-group">
             <h4>{t("focus")}</h4>
-            <Chips options={FOCUS} value={f.focus as (typeof FOCUS)[number][]} onChange={(v) => set({ focus: v })} />
+            <Chips options={focus} value={f.focus} onChange={(v) => set({ focus: v })} />
           </div>
           <div className="filter-row">
-            <label className="field">
+            <div className="field">
               <span>{t("difficulty")}</span>
-              <select value={f.difficulty} onChange={(e) => set({ difficulty: e.target.value })}>
-                <option value="">{t("anyDifficulty")}</option>
-                {DIFFICULTIES.map((d) => (
-                  <option key={d} value={d}>
-                    {t(d as Key)}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <Select
+                label={t("difficulty")}
+                value={f.difficulty}
+                onChange={(difficulty) => set({ difficulty })}
+                options={[
+                  { value: "", label: t("anyDifficulty") },
+                  ...DIFFICULTIES.map((d) => ({ value: d as string, label: t(d as Key) })),
+                ]}
+              />
+            </div>
             <div className="field">
               <span>{t("bpmRange")}</span>
               <div className="range">

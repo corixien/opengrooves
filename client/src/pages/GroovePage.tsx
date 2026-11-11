@@ -6,6 +6,7 @@ import { usePlayer } from "../audio/usePlayer";
 import { GrooveView, type ViewMode } from "../components/Bars";
 import { PlayerBar } from "../components/PlayerBar";
 import { useI18n, type Key } from "../i18n";
+import { useOptions } from "../options";
 import { store } from "../storage";
 
 export function GroovePage() {
@@ -20,6 +21,7 @@ export function GroovePage() {
     );
   }, [id]);
   const { t } = useI18n();
+  const { focusLabel } = useOptions();
   if (state === "loading") return <main className="container"><p className="muted">{t("loading")}</p></main>;
   if (state === "missing" || !g)
     return (
@@ -33,6 +35,7 @@ export function GroovePage() {
 
 function Detail({ g }: { g: Groove }) {
   const { t } = useI18n();
+  const { focusLabel } = useOptions();
   const nav = useNavigate();
   const [bpm, setBpm] = useState(g.bpm);
   const [mode, setMode] = useState<ViewMode>("notes");
@@ -70,8 +73,10 @@ function Detail({ g }: { g: Groove }) {
   };
 
   return (
+    <>
     <main className="container detail">
       <Link to="/" className="muted back">← {t("back")}</Link>
+      <section className="panel">
       <header className="detail-head">
         <div>
           <h1>{g.title}</h1>
@@ -102,11 +107,14 @@ function Detail({ g }: { g: Groove }) {
         <span>▶ {g.plays + (counted ? 1 : 0)} {t("plays")}</span>
       </p>
       <div className="chips static">
-        {[...g.tags, ...g.focus].map((k) => (
-          <span key={k} className="chip static">{t(k as Key)}</span>
+        {[...g.tags.map((k) => t(k as Key)), ...g.focus.map(focusLabel)].map((label) => (
+          <span key={label} className="chip static">{label}</span>
         ))}
       </div>
       {g.description && <p className="desc">{g.description}</p>}
+      </section>
+
+      <section className="panel">
 
       <div className="seg view-switch" role="group">
         <button className={mode === "notes" ? "on" : ""} onClick={() => setMode("notes")}>{t("viewNotes")}</button>
@@ -114,10 +122,12 @@ function Detail({ g }: { g: Groove }) {
       </div>
 
       <GrooveView bars={g.bars} mode={mode} playing={player.playing} getPosition={player.getPosition} />
+      </section>
 
-      <div className="dock">
-        <PlayerBar player={player} bpm={bpm} onBpm={setBpm} />
-      </div>
     </main>
+    <div className="dock">
+      <PlayerBar player={player} bpm={bpm} onBpm={setBpm} />
+    </div>
+    </>
   );
 }

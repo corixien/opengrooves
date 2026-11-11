@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import type { Groove } from "../../../shared/groove";
 import { useI18n, type Key } from "../i18n";
+import { useOptions } from "../options";
 import { NotationPreview } from "./Bars";
 
 export function GrooveCard({ g }: { g: Groove }) {
   const { t } = useI18n();
+  const { focusLabel } = useOptions();
   return (
     <Link to={`/g/${g.id}`} className="card">
       <div className="card-notes">
@@ -21,10 +23,8 @@ export function GrooveCard({ g }: { g: Groove }) {
         <span className={`diff ${g.difficulty}`}>{t(g.difficulty as Key)}</span>
       </p>
       <div className="chips static">
-        {[...g.tags, ...g.focus].map((k) => (
-          <span key={k} className="chip static">
-            {t(k as Key)}
-          </span>
+        {[...g.tags.map((k) => t(k as Key)), ...g.focus.map(focusLabel)].map((label) => (
+          <span key={label} className="chip static">{label}</span>
         ))}
       </div>
       <p className="stats muted">

@@ -38,20 +38,12 @@ export const TAGS = [
   "oddMeter",
 ] as const;
 export const DIFFICULTIES = ["beginner", "intermediate", "advanced"] as const;
-export const FOCUS = [
-  "hihat",
-  "kick",
-  "snare",
-  "feet",
-  "ghostNotes",
-  "fills",
-  "dynamics",
-  "timing",
-] as const;
+/** Focus options live in the DB (table focus_options, admin-editable); ids look like "hihat". */
+export const FOCUS_ID = /^[a-z][a-zA-Z0-9-]{0,29}$/;
+export const MAX_FOCUS = 4;
 
 export type Tag = (typeof TAGS)[number];
 export type Difficulty = (typeof DIFFICULTIES)[number];
-export type Focus = (typeof FOCUS)[number];
 
 export function stepsPerBeat(triplet: boolean): number {
   return triplet ? 3 : 4;
@@ -91,7 +83,7 @@ export const grooveInputSchema = z.object({
   description: text(300).default(""),
   tags: z.array(z.enum(TAGS)).max(6).default([]),
   difficulty: z.enum(DIFFICULTIES),
-  focus: z.array(z.enum(FOCUS)).max(4).default([]),
+  focus: z.array(z.string().regex(FOCUS_ID)).max(MAX_FOCUS).default([]),
   bpm: z.number().int().min(MIN_BPM).max(MAX_BPM),
   bars: z.array(barSchema).min(1).max(MAX_BARS),
   forkOf: z.string().max(40).nullable().default(null),

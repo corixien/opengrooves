@@ -28,12 +28,39 @@ create table if not exists grooves (
   created_at timestamptz not null default now()
 );
 create index if not exists grooves_created_idx on grooves (created_at desc);
+create table if not exists focus_options (
+  id text primary key,
+  label_de text not null,
+  label_en text not null,
+  sort int not null default 0
+);
 create table if not exists likes (
   groove_id text not null references grooves(id) on delete cascade,
   client_id text not null,
   primary key (groove_id, client_id)
 );
 `;
+
+const DEFAULT_FOCUS: [string, string, string][] = [
+  ["hihat", "Hihat-Pattern", "Hi-hat pattern"],
+  ["kick", "Kick-Pattern", "Kick pattern"],
+  ["snare", "Snare / Backbeat", "Snare / backbeat"],
+  ["feet", "Fußkoordination", "Foot coordination"],
+  ["ghostNotes", "Ghost Notes", "Ghost notes"],
+  ["fills", "Fills", "Fills"],
+  ["dynamics", "Dynamik", "Dynamics"],
+  ["timing", "Timing", "Timing"],
+  ["independence", "Unabhängigkeit", "Limb independence"],
+  ["ride", "Ride-Pattern", "Ride pattern"],
+  ["openHihat", "Offene Hihat", "Open hi-hat"],
+  ["linear", "Lineare Grooves", "Linear grooves"],
+  ["accents", "Akzente", "Accents"],
+  ["speed", "Geschwindigkeit", "Speed"],
+  ["endurance", "Ausdauer", "Endurance"],
+  ["polyrhythm", "Polyrhythmik", "Polyrhythms"],
+  ["tomPatterns", "Tom-Patterns", "Tom patterns"],
+  ["doubleKick", "Doppelkick", "Double kick"],
+];
 
 /** DATABASE_URL -> Postgres (Neon etc.); otherwise embedded PGlite (dir, or in-memory when dir is ":memory:"). */
 export async function openDb(databaseUrl?: string, pgliteDir = "data/pglite"): Promise<Db> {
@@ -57,5 +84,13 @@ export async function openDb(databaseUrl?: string, pgliteDir = "data/pglite"): P
     };
   }
   await db.exec(SCHEMA);
+  // Defaults are only inserted when missing, so admin edits in the DB survive restarts.
+  // Admins add rows to focus_options (id, label_de, label_en, sort) to offer new focus choices.
+  for (const [i, [id, de, en]] of DEFAULT_FOCUS.entries()) {
+    await db.query(
+      "insert into focus_options (id, label_de, label_en, sort) values ($1,$2,$3,$4) on conflict (id) do nothing",
+      [id, de, en, (i + 1) * 10],
+    );
+  }
   return db;
 }

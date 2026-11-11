@@ -63,6 +63,17 @@ describe("grooves api", () => {
     expect(after.forkOf).toBeNull();
   });
 
+  it("serves focus options from the db and rejects unknown ids", async () => {
+    const opts = await (await call("/options")).json();
+    expect(opts.focus.find((f: { id: string }) => f.id === "hihat")).toMatchObject({ de: "Hihat-Pattern", en: "Hi-hat pattern" });
+
+    await db.query("insert into focus_options (id,label_de,label_en,sort) values ('custom','Eigener','Custom',999)");
+    expect((await call("/grooves", { method: "POST", body: JSON.stringify(sample("c1", { focus: ["custom"] })) })).status).toBe(201);
+    expect((await call("/grooves", { method: "POST", body: JSON.stringify(sample("c2", { focus: ["nope"] })) })).status).toBe(400);
+    const list = await (await call("/grooves?focus=custom")).json();
+    expect(list.total).toBe(1);
+  });
+
   it("rejects invalid bars", async () => {
     const bad = sample("x", { bars: [{ beats: 4, triplet: false, rows: { kick: "22" } }] });
     expect((await call("/grooves", { method: "POST", body: JSON.stringify(bad) })).status).toBe(400);

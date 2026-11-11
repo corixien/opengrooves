@@ -55,15 +55,6 @@ const de = {
   fill: "Fill",
   oddMeter: "Ungerader Takt",
 
-  // focus
-  hihat: "Hihat-Pattern",
-  kick: "Kick-Pattern",
-  snare: "Snare / Backbeat",
-  feet: "Fußkoordination",
-  ghostNotes: "Ghost Notes",
-  fills: "Fills",
-  dynamics: "Dynamik",
-  timing: "Timing",
 
   // instruments
   inst_crash: "Crash",
@@ -77,6 +68,10 @@ const de = {
   inst_kick: "Kick",
 
   // editor
+  sectionBasics: "Grundlagen",
+  sectionClassify: "Einordnung",
+  sectionPattern: "Groove",
+  step: "Schritt {n}",
   editorTitle: "Neuer Groove",
   editorFork: "Groove kopieren und anpassen",
   fieldTitle: "Titel",
@@ -190,14 +185,6 @@ const en: Record<Key, string> = {
   fill: "Fill",
   oddMeter: "Odd meter",
 
-  hihat: "Hi-hat pattern",
-  kick: "Kick pattern",
-  snare: "Snare / backbeat",
-  feet: "Foot coordination",
-  ghostNotes: "Ghost notes",
-  fills: "Fills",
-  dynamics: "Dynamics",
-  timing: "Timing",
 
   inst_crash: "Crash",
   inst_ride: "Ride",
@@ -209,6 +196,10 @@ const en: Record<Key, string> = {
   inst_snare: "Snare",
   inst_kick: "Kick",
 
+  sectionBasics: "Basics",
+  sectionClassify: "Classification",
+  sectionPattern: "Groove",
+  step: "Step {n}",
   editorTitle: "New groove",
   editorFork: "Copy and adapt groove",
   fieldTitle: "Title",

@@ -28,6 +28,12 @@ export interface ListFilters {
   sort: "new" | "popular" | "played";
 }
 
+export interface FocusOption {
+  id: string;
+  de: string;
+  en: string;
+}
+
 export interface ListResult {
   items: Groove[];
   total: number;
@@ -45,6 +51,7 @@ export const api = {
     p.set("page", String(page));
     return request<ListResult>(`/grooves?${p}`);
   },
+  options: () => request<{ focus: FocusOption[] }>("/options"),
   get: (id: string) => request<Groove>(`/grooves/${id}`),
   create: (g: GrooveInput) =>
     request<{ groove: Groove; token: string }>("/grooves", { method: "POST", body: JSON.stringify(g) }),

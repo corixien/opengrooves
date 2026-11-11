@@ -11,6 +11,9 @@ Login-free web app to create/share/play drum grooves. Repo: github.com/corixien/
 ## Current state
 V1 localhost complete: M1 scaffold/DB/API, M2 grid editor, M3 player (samples, metronome, count-in, loop, volumes, unit, playhead), M4 home (search/filter/sort/likes/plays), M5 notation preview, fork, DE/EN, dark/light. Typecheck, tests, build pass.
 
+## Update (round 2)
+Custom Select component, Lexend font (@fontsource-variable/lexend), panel layout in editor/detail, sticky player dock, focus options moved to DB (GET /api/options, admin-editable in Neon), graceful PGlite shutdown.
+
 ## Next / open
 - Deploy: Render (web service: build `npm run build`, start `npm start`) + Neon (DATABASE_URL; never test against branch production)
 - Possible: drag-paint on touch, MIDI/PDF export, report/moderation, real engraving polish (rests, flags)
