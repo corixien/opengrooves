@@ -1,0 +1,18 @@
+# Opengrooves
+
+Login-free web app: anyone creates drum grooves (grid editor, max 20 bars, 1-8 beats each, 16ths or triplets per bar), browses/searches/filters them, plays them with samples + metronome, forks them.
+
+## Stack
+React + Vite + TS (client/), Express + TS (server/), shared zod schema (shared/groove.ts), Postgres (embedded PGlite locally, Neon via DATABASE_URL in prod), Web Audio API.
+
+## Commands
+- `npm run dev` client :5173 (proxies /api) + server :3001
+- `npm run check` typecheck, `npm test` vitest, `npm run build`, `npm start` (serves dist + API)
+- `npm run samples` re-downloads default CC0 kit (public/samples, swap via manifest.json)
+
+## Invariants
+- Bar rows: one string per instrument, one char per step ('-' none, '1' ghost, '2' normal, '3' accent); length = beats*(triplet?3:4). Validated in shared/groove.ts on client and server.
+- No accounts: owner deletes via token (localStorage, only sha256 stored); likes keyed by anonymous client id.
+- Tags/difficulty/focus are fixed id lists translated in client/src/i18n.ts; title/author/description are free text, untranslated.
+- Never run tests/migrations against Neon production (project gentle-morning-60095256, branch production). Local dev uses PGlite only.
+- Design: flat, no transitions/animations, light+dark via CSS vars.

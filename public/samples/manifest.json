@@ -1,0 +1,12 @@
+{
+  "_comment": "Per instrument: files = [ghost, normal, accent]. Optional rate (pitch via playback rate) and gain. Replace files + edit this to swap the kit.",
+  "kick":     { "files": ["kick-1.flac", "kick-2.flac", "kick-3.flac"] },
+  "snare":    { "files": ["snare-1.flac", "snare-2.flac", "snare-3.flac"] },
+  "hhClosed": { "files": ["hhClosed-1.flac", "hhClosed-2.flac", "hhClosed-3.flac"] },
+  "hhOpen":   { "files": ["hhOpen-1.flac", "hhOpen-2.flac", "hhOpen-3.flac"] },
+  "tomHigh":  { "files": ["tomHigh-1.flac", "tomHigh-2.flac", "tomHigh-3.flac"] },
+  "tomMid":   { "files": ["tomMid-1.flac", "tomMid-2.flac", "tomMid-3.flac"], "rate": 0.84 },
+  "tomLow":   { "files": ["tomLow-1.flac", "tomLow-2.flac", "tomLow-3.flac"] },
+  "crash":    { "files": ["crash-1.flac", "crash-2.flac", "crash-3.flac"] },
+  "ride":     { "files": ["ride-1.flac", "ride-2.flac", "ride-3.flac"] }
+}
