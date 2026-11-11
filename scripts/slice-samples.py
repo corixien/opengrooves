@@ -23,7 +23,7 @@ NAMES = ["kick", "sidestick", "snare", "tomLow", "tomMid", "tomHigh", "hhClosed"
 END = 40.0
 LEAD = 0.002      # start slightly before the grid time
 FADE_IN = 0.003
-FADE_OUT = 0.12
+FADE_OUT = 0.05
 MAX_LEN = 2.5
 TARGET_PEAK = 0.89  # ~ -1 dBFS
 
@@ -45,9 +45,9 @@ def main():
                 nxt = STARTS[i + 1] if i + 1 < len(STARTS) else END
                 b = int(min(nxt - LEAD - 0.002, STARTS[i] + MAX_LEN) * SR)
                 s = x[a:b].copy()
-                # trim a silent tail (< -60 dBFS) but keep at least 80 ms
+                # trim a silent tail (< -50 dB below the hit's own peak) but keep at least 80 ms
                 env = np.abs(s).max(1)
-                loud = np.nonzero(env > 0.001)[0]
+                loud = np.nonzero(env > max(0.0002, 0.003 * env.max()))[0]
                 s = s[: max(int(0.08 * SR), (loud[-1] + int(0.02 * SR)) if len(loud) else 0)]
                 n = len(s)
                 fi, fo = int(FADE_IN * SR), min(int(FADE_OUT * SR), n // 2)
