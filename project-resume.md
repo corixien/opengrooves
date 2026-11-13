@@ -31,3 +31,9 @@ Time signatures n/den (den 1,2,4,8,16; max 8 quarters, max 16 beats; triplets on
 - shared/midi.ts: GM drum map, velocity->level, SMF parser, midiToBars (first time signature, 16th vs triplet per bar, max 20 bars), locateStep (live quantize: step/eighth/quarter). Tests in shared/midi.test.ts.
 - client/src/audio/useMidiInput.ts (Web MIDI, Chrome/Edge); EditorPage toolbar: import .mid, connect input, Record (writes while the player runs, compensates output + MIDI latency), quantize select.
 - Not verified: live MIDI input with a real keyboard (no device in the test browser).
+
+## Playback + list round (2026-11-13)
+- Engine (audio/engine.ts): pause()/seek()/start(from); settings countInBars (1-4) and loopCount (0 = endless); onFullPass fires once per run for the first complete pass from the start (pause/resume or restart = new run) -> audio/playCount.ts posts /play and bumps local counters (usePlays). Groove.forks (count of grooves with fork_of = id) added server-side.
+- usePlayer: Space (anywhere except text inputs) and the Play button = pause/resume, quick double press = restart; ruler click in grid view seeks (snapped to the cell). A card preview of groove X keeps playing when its page opens (engine.grooveId handover; deferred stop for StrictMode).
+- Samples re-cut with early raised-cosine fade-outs (25% drums, 50% cymbals). Favicon: svg rx=10 plus 32px png / apple-touch / ico.
+- Open question for user: metallic samples at very high BPM (see chat): ideas = per-instrument voice choke, master headroom/limiter instead of the compressor, avoid stacking the same long cymbal sample.

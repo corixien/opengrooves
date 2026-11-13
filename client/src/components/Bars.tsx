@@ -289,10 +289,14 @@ interface ViewProps {
   renderHeader?: (barIndex: number) => ReactNode;
   /** Rendered after the last bar inside the scroller (e.g. add-bar button). */
   trailing?: ReactNode;
+  /** Click in the beat ruler of the grid: position in quarters, snapped to the grid. */
+  onSeek?: (pos: number) => void;
+  /** Instruments whose label is lit up (e.g. played on a MIDI keyboard). */
+  lit?: ReadonlySet<Instrument>;
 }
 
 /** Bars side by side in one horizontal scroller; the scroller follows the playhead. */
-export function GrooveView({ bars, mode, playing, getPosition, editable = false, onEdit, onHit, renderHeader, trailing }: ViewProps) {
+export function GrooveView({ bars, mode, playing, getPosition, editable = false, onEdit, onHit, renderHeader, trailing, onSeek, lit }: ViewProps) {
   const { t } = useI18n();
   const heads = useRef<(HTMLElement | null)[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
@@ -342,7 +346,7 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
       {mode === "grid" && (
         <div className="labels">
           {INSTRUMENTS.map((inst) => (
-            <button key={inst} type="button" onClick={() => (onHit ?? engine.preview.bind(engine))(inst, 2)}>
+            <button key={inst} type="button" className={lit?.has(inst) ? "lit" : undefined} onClick={() => (onHit ?? engine.preview.bind(engine))(inst, 2)}>
               {t(`inst_${inst}`)}
             </button>
           ))}
@@ -354,7 +358,20 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
           return (
             <div key={i} className="bar-block" style={{ ["--w" as string]: w, ["--lead" as string]: mode === "grid" ? "0px" : `${LEAD}px` }}>
               {renderHeader ? renderHeader(i) : <span className="bar-no">{i + 1}</span>}
-              <div className="bar-inner">
+              <div
+                className="bar-inner"
+                onClick={
+                  onSeek && mode === "grid"
+                    ? (e) => {
+                        if (!(e.target as Element).closest(".grid-head")) return;
+                        const r = e.currentTarget.getBoundingClientRect();
+                        const step = Math.min(stepCount(bar) - 1, Math.floor(((e.clientX - r.left) / r.width) * stepCount(bar)));
+                        const before = bars.slice(0, i).reduce((q, b) => q + barQuarters(b), 0);
+                        onSeek(before + step / stepsPerQuarter(bar.triplet));
+                      }
+                    : undefined
+                }
+              >
                 {mode === "grid" ? (
                   <BarGrid bar={bar} editable={editable} onEdit={onEdit ? (u) => onEdit(i, u) : undefined} onHit={onHit} />
                 ) : (

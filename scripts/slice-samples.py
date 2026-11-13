@@ -4,7 +4,7 @@ public/samples/<name>-{1,2,3}.flac.
 
 usage: scripts/slice-samples.py <recording.wav> [outdir]
 
-Each cut gets a short fade-in and a longer fade-out against clicks; every sound is
+Each cut gets a short fade-in and a much longer, early-starting fade-out against clicks; every sound is
 normalised as a group, so the soft/medium/hard ratios of the recording are kept.
 Needs numpy and ffmpeg.
 """
@@ -23,7 +23,8 @@ NAMES = ["kick", "sidestick", "snare", "tomLow", "tomMid", "tomHigh", "hhClosed"
 END = 40.0
 LEAD = 0.002      # start slightly before the grid time
 FADE_IN = 0.003
-FADE_OUT = 0.05
+FADE_FRACTION = 0.25, 0.5  # fade-out share of a sample: short drums, long cymbals (>= 0.8 s) - it starts early ...
+FADE_MIN, FADE_MAX = 0.04, 0.9  # ... within these limits (seconds)
 MAX_LEN = 2.5
 TARGET_PEAK = 0.89  # ~ -1 dBFS
 
@@ -50,9 +51,12 @@ def main():
                 loud = np.nonzero(env > max(0.0002, 0.003 * env.max()))[0]
                 s = s[: max(int(0.08 * SR), (loud[-1] + int(0.02 * SR)) if len(loud) else 0)]
                 n = len(s)
-                fi, fo = int(FADE_IN * SR), min(int(FADE_OUT * SR), n // 2)
+                fi = int(FADE_IN * SR)
+                frac = FADE_FRACTION[n / SR >= 0.8]
+                fo = int(min(FADE_MAX, max(FADE_MIN, frac * n / SR)) * SR)
+                fo = min(fo, n - fi)
                 s[:fi] *= np.linspace(0, 1, fi)[:, None]
-                s[n - fo :] *= np.linspace(1, 0, fo)[:, None] ** 2
+                s[n - fo :] *= (0.5 * (1 + np.cos(np.pi * np.linspace(0, 1, fo))))[:, None]  # raised cosine: smooth start and end
                 hits.append(s)
             gain = TARGET_PEAK / max(np.abs(h).max() for h in hits)
             for k, h in enumerate(hits, 1):

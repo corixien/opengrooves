@@ -21,11 +21,13 @@ interface Row {
   fork_title: string | null;
   plays: number;
   likes: number;
+  forks: number;
   created_at: Date | string;
 }
 
 const COLUMNS =
-  "id,title,author,description,tags,difficulty,focus,bpm,bars,fork_of,fork_title,plays,likes,created_at";
+  "id,title,author,description,tags,difficulty,focus,bpm,bars,fork_of,fork_title,plays,likes,created_at," +
+  "(select count(*)::int from grooves f where f.fork_of = grooves.id) as forks";
 
 function toGroove(r: Row): Groove {
   return {
@@ -41,6 +43,7 @@ function toGroove(r: Row): Groove {
     forkOf: r.fork_of && r.fork_title ? { id: r.fork_of, title: r.fork_title } : null,
     plays: r.plays,
     likes: r.likes,
+    forks: Number(r.forks),
     createdAt: new Date(r.created_at).toISOString(),
   };
 }

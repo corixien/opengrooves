@@ -303,7 +303,22 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .rhythm .add-bar { margin: 0.4rem; }
 
 /* editor toolbar: MIDI import / input */
-.midi-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; margin: 0 0 0.9rem; }
+.midi-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; margin: 0 1rem 0.9rem; }
 .midi-bar .field-inline { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 600; color: var(--muted); }
 .midi-bar .toggle.rec.on { background: #d93636; border-color: #d93636; color: #fff; }
-.midi-note { margin: -0.4rem 0 0.8rem; font-size: 0.82rem; color: var(--muted); }
+.midi-note { margin: -0.4rem 1rem 0.8rem; font-size: 0.82rem; color: var(--muted); }
+.labels button.lit { color: var(--accent); }
+.grid-head { cursor: pointer; }
+.grid-head:hover .beat-num { color: var(--ink); }
+.select-btn:disabled { opacity: 0.4; cursor: default; }
+.select-btn:disabled:hover { border-color: var(--line); }
+.check:has(input:disabled) { opacity: 0.4; }
+
+/* player options: checkbox + its setting side by side */
+.opts .opt { display: inline-flex; align-items: center; gap: 0.5rem; }
+.opts .select.count .select-btn { padding: 0.25rem 0.5rem; min-width: 4.6rem; }
+
+/* card: play button left of the notes, stats row */
+.card-play { order: -1; margin-left: 0.6rem; }
+.card-notes { padding-left: 0; }
+.stats { display: flex; gap: 0.9rem; }

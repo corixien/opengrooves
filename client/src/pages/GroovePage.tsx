@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { Groove } from "../../../shared/groove";
 import { api } from "../api";
+import { stopCard } from "../audio/cardPlayback";
+import { usePlays } from "../audio/playCount";
 import { usePlayer } from "../audio/usePlayer";
 import { GrooveView, type ViewMode } from "../components/Bars";
 import { PlayerBar } from "../components/PlayerBar";
@@ -22,6 +24,9 @@ export function GroovePage() {
   }, [id]);
   const { t } = useI18n();
   const { focusLabel } = useOptions();
+  useEffect(() => {
+    if (state === "missing") stopCard();
+  }, [state]);
   if (state === "loading") return <main className="container"><p className="muted">{t("loading")}</p></main>;
   if (state === "missing" || !g)
     return (
@@ -41,20 +46,13 @@ function Detail({ g }: { g: Groove }) {
   const [mode, setMode] = useState<ViewMode>("notes");
   const [likes, setLikes] = useState(g.likes);
   const [liked, setLiked] = useState(false);
-  const [counted, setCounted] = useState(false);
   const token = store.getToken(g.id);
-  const player = usePlayer(g.bars, bpm);
+  const player = usePlayer(g.bars, bpm, g.id);
+  const plays = usePlays(g.id, g.plays);
 
   useEffect(() => {
     api.myLikes().then((ids) => setLiked(ids.includes(g.id)), () => {});
   }, [g.id]);
-
-  useEffect(() => {
-    if (player.playing && !counted) {
-      setCounted(true);
-      api.play(g.id).catch(() => {});
-    }
-  }, [player.playing, counted, g.id]);
 
   const toggleLike = async () => {
     try {
@@ -104,7 +102,9 @@ function Detail({ g }: { g: Groove }) {
         <span>{g.bpm} BPM</span>
         <span>{g.bars.length === 1 ? t("barCount1") : t("barsCount", { n: g.bars.length })}</span>
         <span className={`diff ${g.difficulty}`}>{t(g.difficulty as Key)}</span>
-        <span>▶ {g.plays + (counted ? 1 : 0)} {t("plays")}</span>
+        <span>♥ {likes}</span>
+        <span>{plays} {t("plays")}</span>
+        <span>{g.forks} {t("forks")}</span>
       </p>
       <div className="chips static">
         {[...g.tags.map((k) => t(k as Key)), ...g.focus.map(focusLabel)].map((label) => (
@@ -121,7 +121,7 @@ function Detail({ g }: { g: Groove }) {
         <button className={mode === "grid" ? "on" : ""} onClick={() => setMode("grid")}>{t("viewGrid")}</button>
       </div>
 
-      <GrooveView bars={g.bars} mode={mode} playing={player.playing} getPosition={player.getPosition} />
+      <GrooveView bars={g.bars} mode={mode} playing={player.active} getPosition={player.getPosition} onSeek={player.seek} />
       </section>
 
     </main>

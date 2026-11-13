@@ -117,6 +117,7 @@ export interface Groove extends Omit<GrooveInput, "forkOf"> {
   createdAt: string;
   plays: number;
   likes: number;
+  forks: number;
   forkOf: { id: string; title: string } | null;
 }
 

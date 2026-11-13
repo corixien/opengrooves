@@ -11,17 +11,18 @@ interface Props {
 
 export function PlayerBar({ player, bpm, onBpm }: Props) {
   const { t } = useI18n();
-  const { settings: s, update, playing, status } = player;
+  const { settings: s, update, playing, paused, status } = player;
   const clamp = (v: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(v) || MIN_BPM));
   return (
     <div className="player">
       <button
         className="btn primary play"
-        onClick={playing ? player.stop : player.start}
+        onClick={player.tap}
         disabled={status !== "ready"}
         aria-pressed={playing}
+        title={t("playHint")}
       >
-        {status === "loading" ? t("loadingSounds") : status === "error" ? t("soundsError") : playing ? `■ ${t("stop")}` : `▶ ${t("play")}`}
+        {status === "loading" ? t("loadingSounds") : status === "error" ? t("soundsError") : playing ? `❚❚ ${t("pause")}` : paused ? `▶ ${t("resume")}` : `▶ ${t("play")}`}
       </button>
 
       <label className="field tempo">
@@ -50,14 +51,34 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
       </div>
 
       <div className="opts">
-        <label className="check">
-          <input type="checkbox" checked={s.countIn} onChange={(e) => update({ countIn: e.target.checked })} />
-          {t("countIn")}
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={s.loop} onChange={(e) => update({ loop: e.target.checked })} />
-          {t("loop")}
-        </label>
+        <div className="opt">
+          <label className="check">
+            <input type="checkbox" checked={s.countIn} onChange={(e) => update({ countIn: e.target.checked })} />
+            {t("countIn")}
+          </label>
+          <Select
+            className="count"
+            label={t("countInBars")}
+            disabled={!s.countIn}
+            value={s.countInBars}
+            onChange={(countInBars) => update({ countInBars })}
+            options={[1, 2, 3, 4].map((n) => ({ value: n, label: n === 1 ? t("barCount1") : t("barsCount", { n }) }))}
+          />
+        </div>
+        <div className="opt">
+          <label className="check">
+            <input type="checkbox" checked={s.loop} onChange={(e) => update({ loop: e.target.checked })} />
+            {t("loop")}
+          </label>
+          <Select
+            className="count"
+            label={t("loopCount")}
+            disabled={!s.loop}
+            value={s.loopCount}
+            onChange={(loopCount) => update({ loopCount })}
+            options={[0, 2, 3, 4, 6, 8, 12, 16, 32].map((n) => ({ value: n, label: n === 0 ? "∞" : `${n}×` }))}
+          />
+        </div>
         <div className="field inline">
           <span>{t("clickUnit")}</span>
           <Select

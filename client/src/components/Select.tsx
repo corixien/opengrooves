@@ -13,10 +13,11 @@ interface Props<T extends string | number> {
   className?: string;
   /** Open the list aligned to the right edge (for controls at the right side of the page). */
   alignRight?: boolean;
+  disabled?: boolean;
 }
 
 /** Styled dropdown (listbox) replacing the native <select>. */
-export function Select<T extends string | number>({ value, options, onChange, label, className = "", alignRight = false }: Props<T>) {
+export function Select<T extends string | number>({ value, options, onChange, label, className = "", alignRight = false, disabled = false }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [up, setUp] = useState(false);
@@ -78,6 +79,7 @@ export function Select<T extends string | number>({ value, options, onChange, la
         aria-expanded={open}
         aria-controls={id}
         aria-label={label}
+        disabled={disabled}
         onClick={() => (open ? setOpen(false) : show())}
       >
         <span>{options[selected]?.label}</span>

@@ -14,6 +14,7 @@ import {
   resizeBar,
   setLevel,
   type Bar,
+  type Instrument,
   type Level,
 } from "../../../shared/groove";
 import { GM_INSTRUMENT, locateStep, midiToBars, parseMidi, velocityLevel, type Quantize } from "../../../shared/midi";
@@ -54,6 +55,8 @@ export function EditorPage() {
   const [recording, setRecording] = useState(false);
   const [quant, setQuant] = useState<Quantize>("step");
   const [midiMsg, setMidiMsg] = useState("");
+  const [lit, setLit] = useState<ReadonlySet<Instrument>>(new Set());
+  const litTimers = useRef(new Map<Instrument, number>());
 
   useEffect(() => {
     if (!forkId) return;
@@ -88,6 +91,20 @@ export function EditorPage() {
     if (!inst) return;
     const level = velocityLevel(vel);
     engine.preview(inst, level);
+    setLit((l) => new Set(l).add(inst));
+    window.clearTimeout(litTimers.current.get(inst));
+    litTimers.current.set(
+      inst,
+      window.setTimeout(
+        () =>
+          setLit((l) => {
+            const n = new Set(l);
+            n.delete(inst);
+            return n;
+          }),
+        160,
+      ),
+    );
     if (!recording || !player.playing) return;
     const pos = engine.getPosition();
     if (pos === null || pos < 0) return; // count-in
@@ -317,8 +334,10 @@ export function EditorPage() {
           bars={form.bars}
           mode="grid"
           editable
-          playing={player.playing}
+          playing={player.active}
           getPosition={player.getPosition}
+          onSeek={player.seek}
+          lit={lit}
           onEdit={editBar}
           onHit={onHit}
           renderHeader={header}

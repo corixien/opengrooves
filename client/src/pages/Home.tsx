@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { stopCard } from "../audio/cardPlayback";
 import { Link } from "react-router-dom";
 import { DIFFICULTIES, TAGS, type Groove } from "../../../shared/groove";
 import { api, type ListFilters } from "../api";
@@ -32,7 +31,6 @@ export function Home() {
   const [page, setPage] = useState(1);
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const req = useRef(0);
-  useEffect(() => stopCard, []);
 
   useEffect(() => {
     const id = setTimeout(() => setF((x) => (x.q === qInput ? x : { ...x, q: qInput })), 250);

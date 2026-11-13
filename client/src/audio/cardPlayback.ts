@@ -23,6 +23,13 @@ export function stopCard() {
   emit();
 }
 
+/** Clears the card state without touching the engine (its owner changed). */
+export function releaseCard() {
+  if (current === null) return;
+  current = null;
+  emit();
+}
+
 export async function toggleCard(g: Groove) {
   if (current === g.id) return stopCard();
   engine.stop();
@@ -34,9 +41,12 @@ export async function toggleCard(g: Groove) {
     metroVol: 0.5,
     metroUnit: 1,
     countIn: false,
+    countInBars: 1,
     loop: true,
+    loopCount: 0,
   };
   engine.setBars(g.bars);
+  engine.grooveId = g.id;
   current = g.id;
   emit();
   try {

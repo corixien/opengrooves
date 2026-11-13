@@ -9,7 +9,11 @@ export interface PlayerSettings {
   /** Metronome clicks per beat: 1 = quarter, 2 = eighth, 4 = sixteenth. */
   metroUnit: 1 | 2 | 4;
   countIn: boolean;
+  /** Bars of count-in clicks (length of the first bar each). */
+  countInBars: number;
   loop: boolean;
+  /** Passes through the groove when looping; 0 = endless. */
+  loopCount: number;
 }
 
 type Ev =
@@ -71,9 +75,15 @@ class Engine {
     metroVol: 0.5,
     metroUnit: 1,
     countIn: false,
+    countInBars: 1,
     loop: true,
+    loopCount: 0,
   };
   onEnd: (() => void) | null = null;
+  /** Id of the groove being played (null in the editor); reported with onFullPass. */
+  grooveId: string | null = null;
+  /** Called once per run when all bars have been played through from the start. */
+  onFullPass: ((id: string) => void) | null = null;
 
   private ctx: AudioContext | null = null;
   private grooveGain!: GainNode;
@@ -89,6 +99,10 @@ class Engine {
   private lastBeat = 0;
   private lastTime = 0;
   private ended = false;
+  private pausedAt: number | null = null;
+  private passes = 0;
+  private passFull = true;
+  private counted = false;
   private marks: { time: number; beat: number }[] = [];
   private live = new Set<AudioScheduledSourceNode>();
   private openHat: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
@@ -99,6 +113,15 @@ class Engine {
 
   get playing() {
     return this.timer !== null;
+  }
+
+  /** Position (quarters in the pass) where a paused or seeked groove continues, or 0. */
+  get resumeAt() {
+    return this.pausedAt ?? 0;
+  }
+
+  get paused() {
+    return this.timer === null && this.pausedAt !== null;
   }
 
   private ensureCtx(): AudioContext {
@@ -216,7 +239,8 @@ class Engine {
     this.playNote(inst, level, this.ctx.currentTime);
   }
 
-  async start() {
+  /** Starts at `from` quarters into the groove (resume / seek); count-in only when starting from 0. */
+  async start(from = 0) {
     if (this.playing) return;
     await this.load();
     const ctx = this.ensureCtx();
@@ -224,31 +248,46 @@ class Engine {
     if (this.playing) return; // another start() won the race while loading
     this.ended = false;
     this.marks = [];
+    this.pausedAt = null;
+    this.counted = false;
+    if (from === 0) this.passes = 0;
     this.lastTime = ctx.currentTime + 0.12;
     this.lastBeat = 0;
     this.idx = 0;
-    if (this.settings.countIn) {
-      const n = Math.max(2, Math.round(this.bars[0] ? barQuarters(this.bars[0]) : 4));
+    if (from === 0 && this.settings.countIn) {
+      const perBar = Math.max(2, Math.round(this.bars[0] ? barQuarters(this.bars[0]) : 4));
+      const total = perBar * Math.max(1, this.settings.countInBars);
       const events: Ev[] = [];
-      for (let k = 0; k < n; k++) {
-        events.push({ beat: k - n, kind: "mark" }, { beat: k - n, kind: "click", strength: k === 0 ? 2 : 1 });
+      for (let k = 0; k < total; k++) {
+        events.push({ beat: k - total, kind: "mark" }, { beat: k - total, kind: "click", strength: k % perBar === 0 ? 2 : 1 });
       }
       events.push({ beat: 0, kind: "mark" });
       this.events = events;
-      this.lastBeat = -n;
+      this.lastBeat = -total;
       this.phase = "countin";
     } else {
-      this.beginMainPass();
+      this.beginMainPass(from);
     }
     this.timer = window.setInterval(() => this.tick(), TICK_MS);
     this.tick();
   }
 
-  private beginMainPass() {
-    this.events = buildEvents(this.bars, this.settings.metroUnit).events;
+  private beginMainPass(from = 0) {
+    const { events } = buildEvents(this.bars, this.settings.metroUnit);
+    this.events = from > 0 ? [{ beat: from, kind: "mark" }, ...events.filter((e) => e.beat >= from - 1e-9)] : events;
     this.idx = 0;
-    this.lastBeat = 0;
+    this.lastBeat = from;
     this.phase = "main";
+    this.passFull = from === 0;
+  }
+
+  /** A pass reached its end: counts as one play per run when it was played in full. */
+  private completePass() {
+    this.passes++;
+    if (this.passFull && !this.counted) {
+      this.counted = true;
+      if (this.grooveId) this.onFullPass?.(this.grooveId);
+    }
   }
 
   private tick() {
@@ -268,7 +307,8 @@ class Engine {
           this.beginMainPass();
           continue;
         }
-        if (s.loop) {
+        this.completePass();
+        if (s.loop && (s.loopCount === 0 || this.passes < s.loopCount)) {
           this.beginMainPass();
           continue;
         }
@@ -287,7 +327,7 @@ class Engine {
     }
   }
 
-  stop(natural = false) {
+  private halt() {
     if (this.timer !== null) window.clearInterval(this.timer);
     this.timer = null;
     for (const src of this.live) {
@@ -300,12 +340,34 @@ class Engine {
     this.live.clear();
     this.openHat = null;
     this.marks = [];
+  }
+
+  stop(natural = false) {
+    this.halt();
+    this.pausedAt = null;
     if (natural) this.onEnd?.();
+  }
+
+  /** Stops but remembers the position so start(resumeAt) continues from there. */
+  pause() {
+    if (!this.playing) return;
+    const pos = this.phase === "main" ? this.getPosition() : null;
+    this.halt();
+    this.pausedAt = pos !== null && pos > 0 ? pos : null;
+  }
+
+  /** Jumps to `pos` quarters: continues playing from there, or just moves the resume point. */
+  seek(pos: number) {
+    const was = this.playing;
+    this.halt();
+    this.pausedAt = pos > 0 ? pos : null;
+    if (was) void this.start(pos);
   }
 
   /** Current position in beats within the pass (negative during count-in), or null when stopped. */
   getPosition(): number | null {
-    if (!this.ctx || this.timer === null) return null;
+    if (this.timer === null) return this.pausedAt;
+    if (!this.ctx) return null;
     const now = this.ctx.currentTime - (this.ctx.outputLatency || this.ctx.baseLatency || 0);
     const m = this.marks;
     while (m.length > 2 && m[1].time <= now - 1) m.shift();

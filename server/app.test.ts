@@ -56,6 +56,7 @@ describe("grooves api", () => {
       await call("/grooves", { method: "POST", body: JSON.stringify(sample("Rock v2", { forkOf: groove.id })) })
     ).json();
     expect(fork.groove.forkOf.title).toBe("Basic Rock");
+    expect((await (await call(`/grooves/${groove.id}`)).json()).forks).toBe(1);
 
     expect((await call(`/grooves/${groove.id}`, { method: "DELETE", headers: { "x-owner-token": "nope" } })).status).toBe(403);
     expect((await call(`/grooves/${groove.id}`, { method: "DELETE", headers: { "x-owner-token": token } })).status).toBe(204);
