@@ -10,6 +10,7 @@ import {
   type Instrument,
   type Level,
 } from "../../../shared/groove";
+import { engine } from "../audio/engine";
 import { useI18n } from "../i18n";
 
 // ---------- notation geometry (SVG units) ----------
@@ -201,23 +202,29 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
   const n = stepCount(bar);
   const perBeat = n / bar.beats; // steps per beat of the time signature
   const paint = useRef<Level | null>(null);
+  const visited = useRef(new Set<string>()); // cells already handled in the current stroke
 
   const apply = (el: Element | null) => {
     const cell = el?.closest<HTMLElement>("[data-cell]");
     if (!cell || paint.current === null || !onEdit) return;
     const inst = cell.dataset.inst as Instrument;
     const step = Number(cell.dataset.step);
+    const key = `${inst}:${step}`;
+    if (visited.current.has(key)) return;
+    visited.current.add(key);
     const target = paint.current;
-    onEdit((b) => (getLevel(b, inst, step) === target ? b : setLevel(b, inst, step, target)));
-    if (target > 0) onHit?.(inst, target);
+    if (getLevel(bar, inst, step) === target) return;
+    onEdit((b) => setLevel(b, inst, step, target));
+    if (target > 0) onHit?.(inst, target); // sound only for newly placed notes
   };
 
   const down = (e: React.PointerEvent) => {
-    if (!editable || e.button !== 0) return;
+    if (!editable || (e.button !== 0 && e.button !== 2)) return;
     const cell = (e.target as Element).closest<HTMLElement>("[data-cell]");
     if (!cell) return;
-    const cur = getLevel(bar, cell.dataset.inst as Instrument, Number(cell.dataset.step));
-    paint.current = NEXT_LEVEL[cur];
+    visited.current.clear();
+    // left click cycles the level, right click erases (also while dragging)
+    paint.current = e.button === 2 ? 0 : NEXT_LEVEL[getLevel(bar, cell.dataset.inst as Instrument, Number(cell.dataset.step))];
     apply(cell);
     if (e.pointerType === "mouse") (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -236,6 +243,7 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={up}
+      onContextMenu={editable ? (e) => e.preventDefault() : undefined}
     >
       <div className="grid-head">
         {Array.from({ length: bar.beats }, (_, b) => (
@@ -332,9 +340,11 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
   return (
     <div className={`rhythm view-${mode}${renderHeader ? " with-head" : ""}`}>
       {mode === "grid" && (
-        <div className="labels" aria-hidden="true">
+        <div className="labels">
           {INSTRUMENTS.map((inst) => (
-            <span key={inst}>{t(`inst_${inst}`)}</span>
+            <button key={inst} type="button" onClick={() => (onHit ?? engine.preview.bind(engine))(inst, 2)}>
+              {t(`inst_${inst}`)}
+            </button>
           ))}
         </div>
       )}

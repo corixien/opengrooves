@@ -240,7 +240,8 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .rhythm .bars { flex: 1; min-width: 0; display: flex; align-items: flex-start; overflow-x: auto; padding-bottom: 0.4rem; }
 .labels { flex: none; display: flex; flex-direction: column; padding-top: var(--beat-h); padding-right: 0.7rem; }
 .rhythm.with-head .labels { padding-top: calc(var(--head-h) + var(--beat-h)); }
-.labels span { height: var(--cell); display: flex; align-items: center; font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.labels button { height: var(--cell); display: flex; align-items: center; padding: 0; border: 0; background: none; font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap; text-align: left; cursor: pointer; }
+.labels button:hover { color: var(--ink); }
 .bar-block { flex: none; background: var(--bg); border: 1px solid var(--line); border-left-width: 0; padding: 0 0.5rem 0.4rem; }
 .bar-block:first-child { border-left-width: 1px; border-radius: 4px 0 0 4px; }
 .bar-block:last-of-type { border-radius: 0 4px 4px 0; }
@@ -300,3 +301,9 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .rhythm .bar-head { padding: 0 0.5rem; }
 .rhythm .bar-block > .bar-no { padding-left: 0.4rem; }
 .rhythm .add-bar { margin: 0.4rem; }
+
+/* editor toolbar: MIDI import / input */
+.midi-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; margin: 0 0 0.9rem; }
+.midi-bar .field-inline { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+.midi-bar .toggle.rec.on { background: #d93636; border-color: #d93636; color: #fff; }
+.midi-note { margin: -0.4rem 0 0.8rem; font-size: 0.82rem; color: var(--muted); }

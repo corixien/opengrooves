@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   DIFFICULTIES,
@@ -12,12 +12,15 @@ import {
   TAGS,
   emptyBar,
   resizeBar,
+  setLevel,
   type Bar,
   type Level,
 } from "../../../shared/groove";
+import { GM_INSTRUMENT, locateStep, midiToBars, parseMidi, velocityLevel, type Quantize } from "../../../shared/midi";
 import { ApiError, api } from "../api";
 import { usePlayer } from "../audio/usePlayer";
 import { engine } from "../audio/engine";
+import { useMidiInput } from "../audio/useMidiInput";
 import { GrooveView } from "../components/Bars";
 import { Chips } from "../components/Chips";
 import { PlayerBar } from "../components/PlayerBar";
@@ -48,6 +51,9 @@ export function EditorPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const player = usePlayer(form.bars, form.bpm);
+  const [recording, setRecording] = useState(false);
+  const [quant, setQuant] = useState<Quantize>("step");
+  const [midiMsg, setMidiMsg] = useState("");
 
   useEffect(() => {
     if (!forkId) return;
@@ -76,6 +82,30 @@ export function EditorPage() {
   const setBars = (fn: (bars: Bar[]) => Bar[]) => setForm((f) => ({ ...f, bars: fn(f.bars) }));
   const editBar = (i: number, up: (b: Bar) => Bar) => setBars((bs) => bs.map((b, j) => (j === i ? up(b) : b)));
   const onHit = useMemo(() => (inst: Parameters<typeof engine.preview>[0], l: Level) => engine.preview(inst, l), []);
+
+  const midi = useMidiInput((note, vel, lagMs) => {
+    const inst = GM_INSTRUMENT[note];
+    if (!inst) return;
+    const level = velocityLevel(vel);
+    engine.preview(inst, level);
+    if (!recording || !player.playing) return;
+    const pos = engine.getPosition();
+    if (pos === null || pos < 0) return; // count-in
+    const hit = locateStep(form.bars, pos - (lagMs * form.bpm) / 60000, quant);
+    if (hit) editBar(hit.bar, (b) => setLevel(b, inst, hit.step, level));
+  });
+
+  const importMidi = async (file: File) => {
+    try {
+      const m = midiToBars(parseMidi(new Uint8Array(await file.arrayBuffer())));
+      if (form.bars.some((b) => Object.keys(b.rows).length) && !confirm(t("midiImportConfirm"))) return;
+      player.stop();
+      setForm((f) => ({ ...f, bars: m.bars, bpm: m.bpm, title: f.title || file.name.replace(/\.[^.]+$/, "").slice(0, 60) }));
+      setMidiMsg(t("midiImportDone", { n: m.imported, bars: m.bars.length, bpm: m.bpm, skipped: m.dropped }));
+    } catch {
+      setMidiMsg(t("midiImportError"));
+    }
+  };
 
   const publish = async () => {
     setError("");
@@ -228,6 +258,60 @@ export function EditorPage() {
           <h2>{t("sectionPattern")}</h2>
         </header>
         <p className="muted hint">{t("brushHint")}</p>
+
+        <div className="midi-bar">
+          <label className="btn">
+            {t("midiImport")}
+            <input
+              type="file"
+              accept=".mid,.midi,audio/midi"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void importMidi(f);
+              }}
+            />
+          </label>
+          <button
+            className={`toggle${midi.status === "on" ? " on" : ""}`}
+            disabled={midi.status === "unsupported"}
+            aria-pressed={midi.status === "on"}
+            onClick={midi.connect}
+          >
+            {midi.status === "on" ? t("midiInputOn") : t("midiInput")}
+          </button>
+          {midi.status === "on" && (
+            <>
+              <button className={`toggle rec${recording ? " on" : ""}`} aria-pressed={recording} onClick={() => setRecording((r) => !r)}>
+                {t("midiRecord")}
+              </button>
+              <span className="field-inline">
+                {t("quantize")}
+                <Select
+                  label={t("quantize")}
+                  value={quant}
+                  onChange={setQuant}
+                  options={[
+                    { value: "step" as Quantize, label: t("quantStep") },
+                    { value: "eighth" as Quantize, label: t("quantEighth") },
+                    { value: "quarter" as Quantize, label: t("quantQuarter") },
+                  ]}
+                />
+              </span>
+            </>
+          )}
+        </div>
+        <p className="midi-note">
+          {midi.status === "unsupported"
+            ? t("midiUnsupported")
+            : midi.status === "denied"
+              ? t("midiDenied")
+              : midi.status === "on"
+                ? `${midi.inputs.join(", ") || t("midiNone")}${recording ? " · " + t("midiRecordHint") : ""}`
+                : midiMsg || ""}
+          {midi.status === "on" && midiMsg ? ` · ${midiMsg}` : ""}
+        </p>
 
         <GrooveView
           bars={form.bars}

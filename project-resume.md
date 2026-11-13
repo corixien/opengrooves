@@ -25,3 +25,9 @@ Time signatures n/den (den 1,2,4,8,16; max 8 quarters, max 16 beats; triplets on
 - Deploy: Render (web service: build `npm run build`, start `npm start`) + Neon (DATABASE_URL; never test against branch production)
 - Possible: drag-paint on touch, MIDI/PDF export, report/moderation, real engraving polish (rests, flags)
 - Known limits: notation is simplified (no rests/flags); background tabs throttle the scheduler timer.
+
+## MIDI + grid editing (2026-11-12)
+- Grid: right click / right-drag erases; during a drag sound plays only for newly placed notes (visited set in BarGrid); clicking an instrument label plays it.
+- shared/midi.ts: GM drum map, velocity->level, SMF parser, midiToBars (first time signature, 16th vs triplet per bar, max 20 bars), locateStep (live quantize: step/eighth/quarter). Tests in shared/midi.test.ts.
+- client/src/audio/useMidiInput.ts (Web MIDI, Chrome/Edge); EditorPage toolbar: import .mid, connect input, Record (writes while the player runs, compensates output + MIDI latency), quantize select.
+- Not verified: live MIDI input with a real keyboard (no device in the test browser).
