@@ -66,19 +66,32 @@ export function buildEvents(bars: Bar[], unit: 1 | 2 | 4): { events: Ev[]; lengt
   return { events, length: start };
 }
 
+export const DEFAULT_SETTINGS: PlayerSettings = {
+  bpm: 100,
+  grooveOn: true,
+  grooveVol: 0.9,
+  metroOn: true,
+  metroVol: 0.5,
+  metroUnit: 1,
+  countIn: false,
+  countInBars: 1,
+  loop: true,
+  loopCount: 0,
+};
+
 class Engine {
-  settings: PlayerSettings = {
-    bpm: 100,
-    grooveOn: true,
-    grooveVol: 0.9,
-    metroOn: true,
-    metroVol: 0.5,
-    metroUnit: 1,
-    countIn: false,
-    countInBars: 1,
-    loop: true,
-    loopCount: 0,
-  };
+  settings: PlayerSettings = { ...DEFAULT_SETTINGS };
+  /** Bumped on every play/pause/stop/seek; for useSyncExternalStore. */
+  rev = 0;
+  private subs = new Set<() => void>();
+  subscribe = (cb: () => void) => (this.subs.add(cb), () => void this.subs.delete(cb));
+  private bump() {
+    this.rev++;
+    this.subs.forEach((f) => f());
+  }
+  get hasBars() {
+    return this.bars.length > 0;
+  }
   onEnd: (() => void) | null = null;
   /** Id of the groove being played (null in the editor); reported with onFullPass. */
   grooveId: string | null = null;
@@ -270,6 +283,7 @@ class Engine {
     }
     this.timer = window.setInterval(() => this.tick(), TICK_MS);
     this.tick();
+    this.bump();
   }
 
   private beginMainPass(from = 0) {
@@ -346,6 +360,7 @@ class Engine {
     this.halt();
     this.pausedAt = null;
     if (natural) this.onEnd?.();
+    this.bump();
   }
 
   /** Stops but remembers the position so start(resumeAt) continues from there. */
@@ -354,13 +369,15 @@ class Engine {
     const pos = this.phase === "main" ? this.getPosition() : null;
     this.halt();
     this.pausedAt = pos !== null && pos > 0 ? pos : null;
+    this.bump();
   }
 
   /** Jumps to `pos` quarters: continues playing from there, or just moves the resume point. */
   seek(pos: number) {
     const was = this.playing;
     this.halt();
-    this.pausedAt = pos > 0 ? pos : null;
+    this.pausedAt = pos;
+    this.bump();
     if (was) void this.start(pos);
   }
 

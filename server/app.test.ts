@@ -79,4 +79,31 @@ describe("grooves api", () => {
     const bad = sample("x", { bars: [{ beats: 4, triplet: false, rows: { kick: "22" } }] });
     expect((await call("/grooves", { method: "POST", body: JSON.stringify(bad) })).status).toBe(400);
   });
+
+  it("owner edit keeps forks, delete requests vanish with the groove", async () => {
+    const { groove, token } = await (await call("/grooves", { method: "POST", body: JSON.stringify(sample("Orig")) })).json();
+    const fork = (await (await call("/grooves", { method: "POST", body: JSON.stringify(sample("Copy", { forkOf: groove.id })) })).json()).groove;
+
+    const put = (tok: string, body: object) => call(`/grooves/${groove.id}`, { method: "PUT", headers: { "x-owner-token": tok }, body: JSON.stringify(body) });
+    expect((await put("nope", sample("Hacked"))).status).toBe(403);
+    const edited = await (await put(token, sample("Orig edited", { bpm: 140 }))).json();
+    expect(edited.title).toBe("Orig edited");
+    expect(edited.bpm).toBe(140);
+    const kept = await (await call(`/grooves/${fork.id}`)).json();
+    expect(kept.title).toBe("Copy");
+    expect(kept.forkOf.title).toBe("Orig"); // snapshot, not changed by the edit
+
+    const ask = (reason: string) => call(`/grooves/${groove.id}/delete-request`, { method: "POST", headers: { "x-client-id": "visitor-123456" }, body: JSON.stringify({ reason }) });
+    expect((await ask("spam")).status).toBe(204);
+    expect((await ask("still spam")).status).toBe(204); // same visitor: one row, updated
+    const rows = await db.query<{ reason: string; groove_url: string }>("select reason, groove_url from delete_requests");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].reason).toBe("still spam");
+    expect(rows[0].groove_url).toMatch(new RegExp(`/g/${groove.id}$`));
+    expect((await call("/grooves/nothere/delete-request", { method: "POST", headers: { "x-client-id": "visitor-123456" }, body: "{}" })).status).toBe(404);
+
+    await call(`/grooves/${groove.id}`, { method: "DELETE", headers: { "x-owner-token": token } });
+    expect(await db.query("select 1 from delete_requests")).toHaveLength(0); // cascade
+    expect((await call(`/grooves/${fork.id}`)).status).toBe(200);
+  });
 });

@@ -55,6 +55,9 @@ export const api = {
   get: (id: string) => request<Groove>(`/grooves/${id}`),
   create: (g: GrooveInput) =>
     request<{ groove: Groove; token: string }>("/grooves", { method: "POST", body: JSON.stringify(g) }),
+  update: (id: string, g: GrooveInput, token: string) =>
+    request<Groove>(`/grooves/${id}`, { method: "PUT", body: JSON.stringify(g), headers: { "x-owner-token": token } }),
+  requestDelete: (id: string, reason: string) => request<void>(`/grooves/${id}/delete-request`, { method: "POST", body: JSON.stringify({ reason }) }),
   remove: (id: string, token: string) =>
     request<void>(`/grooves/${id}`, { method: "DELETE", headers: { "x-owner-token": token } }),
   play: (id: string) => request<void>(`/grooves/${id}/play`, { method: "POST" }),

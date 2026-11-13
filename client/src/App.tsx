@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Route, Routes } from "react-router-dom";
+import { useSpaceHotkey } from "./audio/playback";
 import { Select } from "./components/Select";
 import { useI18n, type Lang } from "./i18n";
 import { EditorPage } from "./pages/EditorPage";
@@ -14,6 +15,7 @@ function initialTheme(): Theme {
 export function App() {
   const { t, lang, setLang } = useI18n();
   const [theme, setTheme] = useState<Theme>(initialTheme);
+  useSpaceHotkey();
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     store.setTheme(theme);
@@ -56,6 +58,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/new" element={<EditorPage />} />
+        <Route path="/edit/:id" element={<EditorPage />} />
         <Route path="/g/:id" element={<GroovePage />} />
         <Route path="*" element={<Home />} />
       </Routes>

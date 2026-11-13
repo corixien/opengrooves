@@ -34,6 +34,18 @@ create table if not exists focus_options (
   label_en text not null,
   sort int not null default 0
 );
+-- Deletion requests from visitors. Admin (Neon): open groove_url, delete the groove in "grooves"
+-- (its requests disappear with it), or just delete the request row to dismiss it.
+create table if not exists delete_requests (
+  id bigint generated always as identity primary key,
+  groove_id text not null references grooves(id) on delete cascade,
+  groove_title text not null,
+  groove_url text not null,
+  client_id text not null,
+  reason text not null default '',
+  created_at timestamptz not null default now(),
+  unique (groove_id, client_id)
+);
 create table if not exists likes (
   groove_id text not null references grooves(id) on delete cascade,
   client_id text not null,

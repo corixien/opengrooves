@@ -42,8 +42,9 @@ export const store = {
   setLang: (l: "de" | "en") => write("og.lang", l),
   getTheme: () => read<Theme>("og.theme"),
   setTheme: (t: Theme) => write("og.theme", t),
-  getPlayer: () => read<Partial<PlayerSettings>>("og.player"),
-  setPlayer: (p: Partial<PlayerSettings>) => write("og.player", p),
+  /** Volumes are shared by every groove and the list. */
+  getVolume: () => ({ grooveVol: 0.9, metroVol: 0.5, ...read<Pick<PlayerSettings, "grooveVol" | "metroVol">>("og.volume") }),
+  setVolume: (v: Pick<PlayerSettings, "grooveVol" | "metroVol">) => write("og.volume", v),
   getDraft(): Draft | null {
     const d = read<Draft>("og.draft");
     // drafts saved before denominators existed

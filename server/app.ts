@@ -149,12 +149,15 @@ export function createApp(db: Db) {
     res.json(toGroove(rows[0]));
   });
 
+  const focusKnown = async (focus: string[]) => {
+    if (!focus.length) return true;
+    const known = await db.query<{ id: string }>("select id from focus_options where id = any($1::text[])", [focus]);
+    return known.length === new Set(focus).size;
+  };
+
   api.post("/grooves", createLimit, async (req, res) => {
     const g = grooveInputSchema.parse(req.body);
-    if (g.focus.length) {
-      const known = await db.query<{ id: string }>("select id from focus_options where id = any($1::text[])", [g.focus]);
-      if (known.length !== new Set(g.focus).size) return void res.status(400).json({ error: "unknown_focus" });
-    }
+    if (!(await focusKnown(g.focus))) return void res.status(400).json({ error: "unknown_focus" });
     let forkTitle: string | null = null;
     let forkOf: string | null = null;
     if (g.forkOf) {
@@ -189,6 +192,46 @@ export function createApp(db: Db) {
       ],
     );
     res.status(201).json({ groove: toGroove(rows[0]), token });
+  });
+
+  /** Owner edit in place. Forks made earlier are independent copies and stay as they are. */
+  api.put("/grooves/:id", actionLimit, async (req, res) => {
+    const g = grooveInputSchema.parse(req.body);
+    if (!(await focusKnown(g.focus))) return void res.status(400).json({ error: "unknown_focus" });
+    const rows = await db.query<Row>(
+      `update grooves set title=$3, author=$4, description=$5, tags=$6::jsonb, difficulty=$7, focus=$8::jsonb,
+         bpm=$9, bars=$10::jsonb, bar_count=$11
+       where id = $1 and owner_hash = $2 returning ${COLUMNS}`,
+      [
+        req.params.id,
+        hash(req.get("x-owner-token") ?? ""),
+        g.title,
+        g.author,
+        g.description,
+        JSON.stringify(g.tags),
+        g.difficulty,
+        JSON.stringify(g.focus),
+        g.bpm,
+        JSON.stringify(g.bars),
+        g.bars.length,
+      ],
+    );
+    if (!rows[0]) return void res.status(403).json({ error: "forbidden" });
+    res.json(toGroove(rows[0]));
+  });
+
+  api.post("/grooves/:id/delete-request", actionLimit, async (req, res) => {
+    const clientId = clientIdSchema.parse(req.get("x-client-id"));
+    const { reason } = z.object({ reason: z.string().trim().max(300).default("") }).parse(req.body ?? {});
+    const found = await db.query<{ id: string; title: string }>("select id, title from grooves where id = $1", [req.params.id]);
+    if (!found[0]) return void res.status(404).json({ error: "not_found" });
+    const base = (process.env.PUBLIC_URL || req.get("origin") || "").replace(/\/$/, "");
+    await db.query(
+      `insert into delete_requests (groove_id, groove_title, groove_url, client_id, reason) values ($1,$2,$3,$4,$5)
+       on conflict (groove_id, client_id) do update set reason = excluded.reason`,
+      [found[0].id, found[0].title, `${base}/g/${found[0].id}`, clientId, reason],
+    );
+    res.status(204).end();
   });
 
   api.delete("/grooves/:id", actionLimit, async (req, res) => {

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { DIFFICULTIES, TAGS, type Groove } from "../../../shared/groove";
 import { api, type ListFilters } from "../api";
+import { engine } from "../audio/engine";
+import { store } from "../storage";
 import { Chips } from "../components/Chips";
 import { GrooveCard } from "../components/GrooveCard";
 import { Select } from "../components/Select";
@@ -31,6 +33,12 @@ export function Home() {
   const [page, setPage] = useState(1);
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const req = useRef(0);
+  const [vol, setVol] = useState(() => store.getVolume().grooveVol);
+  const changeVol = (v: number) => {
+    setVol(v);
+    store.setVolume({ ...store.getVolume(), grooveVol: v });
+    engine.settings = { ...engine.settings, grooveVol: v };
+  };
 
   useEffect(() => {
     const id = setTimeout(() => setF((x) => (x.q === qInput ? x : { ...x, q: qInput })), 250);
@@ -133,9 +141,16 @@ export function Home() {
         </section>
       )}
 
-      <p className="muted count">
-        {state === "ok" || items.length ? `${total} ${t("results")}` : ""}
-      </p>
+      <div className="listbar">
+        <p className="muted count">{state === "ok" || items.length ? `${total} ${t("results")}` : ""}</p>
+        <label className="volume" title={t("volume")}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <path d="M2 6h2.5L8 3v10L4.5 10H2z" />
+            <path d="M10.5 5.5a3.5 3.5 0 0 1 0 5" />
+          </svg>
+          <input type="range" min={0} max={1} step={0.01} value={vol} onChange={(e) => changeVol(Number(e.target.value))} aria-label={t("volume")} />
+        </label>
+      </div>
 
       {state === "error" && <p className="notice error">{t("loadError")}</p>}
       {state === "ok" && items.length === 0 && (

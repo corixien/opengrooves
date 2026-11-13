@@ -12,7 +12,9 @@ React + Vite + TS (client/), Express + TS (server/), shared zod schema (shared/g
 
 ## Invariants
 - Bar rows: one string per instrument, one char per step ('-' none, '1' ghost, '2' normal, '3' accent); length = quarters(beats*4/den)*(triplet?3:4). Validated in shared/groove.ts on client and server.
-- No accounts: owner deletes via token (localStorage, only sha256 stored); likes keyed by anonymous client id.
+- No accounts: owner edits (PUT) and deletes via token (localStorage, only sha256 stored); likes keyed by anonymous client id.
 - Tags/difficulty are fixed id lists translated in client/src/i18n.ts. Focus options live in DB table focus_options (id, label_de, label_en, sort); admins add rows in Neon (both languages required), defaults seeded on startup (never overwritten). title/author/description are free text, untranslated.
+- Non-owners file delete requests (table delete_requests, cascade on groove delete); admin handles them in Neon. Forks are independent copies (fork_title is a snapshot).
+- Playback is one global engine: it keeps playing across pages (a groove page adopts its own groove), Space toggles it everywhere, only volumes are persisted (og.volume).
 - Never run tests/migrations against Neon production (project gentle-morning-60095256, branch production). Local dev uses PGlite only.
 - Design: flat, no transitions/animations, light+dark via CSS vars.

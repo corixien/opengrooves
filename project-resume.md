@@ -37,3 +37,9 @@ Time signatures n/den (den 1,2,4,8,16; max 8 quarters, max 16 beats; triplets on
 - usePlayer: Space (anywhere except text inputs) and the Play button = pause/resume, quick double press = restart; ruler click in grid view seeks (snapped to the cell). A card preview of groove X keeps playing when its page opens (engine.grooveId handover; deferred stop for StrictMode).
 - Samples re-cut with early raised-cosine fade-outs (25% drums, 50% cymbals). Favicon: svg rx=10 plus 32px png / apple-touch / ico.
 - Open question for user: metallic samples at very high BPM (see chat): ideas = per-instrument voice choke, master headroom/limiter instead of the compressor, avoid stacking the same long cymbal sample.
+
+## Round 2026-11-13b
+- Global transport (audio/playback.ts, engine rev/subscribe): playback survives page changes, Space toggles everywhere (not in text fields/dropdowns). Editor draft stops on leaving. Only volumes persist (og.volume) and also drive list previews (volume slider on Home).
+- GrooveView follows the playhead only while running, eased, and pauses following ~4 s after a manual scroll/touch/scrollbar drag (this was the "cannot scroll" bug). Seeking never scrolls; notation bars are clickable (nearest note), grid ruler uses cell start.
+- Server: PUT /api/grooves/:id (owner edit), POST /api/grooves/:id/delete-request, table delete_requests. Client: /edit/:id, request form, copy link, Stat icons.
+- Mobile: top bar two rows, dock folds extras behind a toggle, card preview shows one bar under 720px, draft notice only for non-empty drafts.

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MAX_BPM, MIN_BPM } from "../../../shared/groove";
 import type { PlayerState } from "../audio/usePlayer";
 import { useI18n } from "../i18n";
@@ -12,9 +13,10 @@ interface Props {
 export function PlayerBar({ player, bpm, onBpm }: Props) {
   const { t } = useI18n();
   const { settings: s, update, playing, paused, status } = player;
+  const [more, setMore] = useState(false); // phones: sliders and options fold away
   const clamp = (v: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(v) || MIN_BPM));
   return (
-    <div className="player">
+    <div className={`player${more ? " open" : ""}`}>
       <button
         className="btn primary play"
         onClick={player.tap}
@@ -57,7 +59,7 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
             {t("countIn")}
           </label>
           <Select
-            className="count"
+            className="num"
             label={t("countInBars")}
             disabled={!s.countIn}
             value={s.countInBars}
@@ -71,7 +73,7 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
             {t("loop")}
           </label>
           <Select
-            className="count"
+            className="num"
             label={t("loopCount")}
             disabled={!s.loop}
             value={s.loopCount}
@@ -94,6 +96,13 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
           />
         </div>
       </div>
+      <button className="btn icon more" onClick={() => setMore(!more)} aria-expanded={more} aria-label={t("moreOptions")} title={t("moreOptions")}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7" />
+          <circle cx="10.5" cy="4.5" r="1.5" />
+          <circle cx="5.5" cy="11.5" r="1.5" />
+        </svg>
+      </button>
     </div>
   );
 }

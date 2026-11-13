@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { Groove } from "../../../shared/groove";
 import { api } from "../api";
-import { stopCard } from "../audio/cardPlayback";
+import { engine } from "../audio/engine";
 import { usePlays } from "../audio/playCount";
 import { usePlayer } from "../audio/usePlayer";
 import { GrooveView, type ViewMode } from "../components/Bars";
+import { Stat } from "../components/Stat";
 import { PlayerBar } from "../components/PlayerBar";
 import { useI18n, type Key } from "../i18n";
 import { useOptions } from "../options";
@@ -25,7 +26,7 @@ export function GroovePage() {
   const { t } = useI18n();
   const { focusLabel } = useOptions();
   useEffect(() => {
-    if (state === "missing") stopCard();
+    if (state === "missing") engine.stop();
   }, [state]);
   if (state === "loading") return <main className="container"><p className="muted">{t("loading")}</p></main>;
   if (state === "missing" || !g)
@@ -47,6 +48,10 @@ function Detail({ g }: { g: Groove }) {
   const [likes, setLikes] = useState(g.likes);
   const [liked, setLiked] = useState(false);
   const token = store.getToken(g.id);
+  const [asking, setAsking] = useState(false);
+  const [reason, setReason] = useState("");
+  const [sent, setSent] = useState(false);
+  const [copied, setCopied] = useState(false);
   const player = usePlayer(g.bars, bpm, g.id);
   const plays = usePlays(g.id, g.plays);
 
@@ -61,6 +66,24 @@ function Detail({ g }: { g: Groove }) {
       setLiked(!liked);
     } catch {
       /* ignore */
+    }
+  };
+  const sendRequest = async () => {
+    try {
+      await api.requestDelete(g.id, reason);
+      setSent(true);
+      setAsking(false);
+    } catch {
+      /* shown as not sent: the form stays open */
+    }
+  };
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked */
     }
   };
   const remove = async () => {
@@ -94,17 +117,36 @@ function Detail({ g }: { g: Groove }) {
             ♥ {liked ? t("liked") : t("like")} · {likes}
           </button>
           <Link className="btn" to={`/new?fork=${g.id}`}>{t("forkIt")}</Link>
-          {token && <button className="btn danger" onClick={remove}>{t("deleteGroove")}</button>}
+          <button className="btn" onClick={copyLink}>{copied ? t("linkCopied") : t("copyLink")}</button>
+          {token && <Link className="btn" to={`/edit/${g.id}`}>{t("editGroove")}</Link>}
+          {token ? (
+            <button className="btn danger" onClick={remove}>{t("deleteGroove")}</button>
+          ) : (
+            <button className="btn danger" onClick={() => setAsking(!asking)} disabled={sent}>
+              {sent ? t("requestSent") : t("requestDelete")}
+            </button>
+          )}
         </div>
       </header>
+
+      {asking && !token && (
+        <div className="request">
+          <p>{t("requestInfo")}</p>
+          <textarea rows={2} maxLength={300} value={reason} placeholder={t("requestReason")} onChange={(e) => setReason(e.target.value)} />
+          <div className="request-actions">
+            <button className="btn primary" onClick={sendRequest}>{t("requestSend")}</button>
+            <button className="btn" onClick={() => setAsking(false)}>{t("cancel")}</button>
+          </div>
+        </div>
+      )}
 
       <p className="meta">
         <span>{g.bpm} BPM</span>
         <span>{g.bars.length === 1 ? t("barCount1") : t("barsCount", { n: g.bars.length })}</span>
         <span className={`diff ${g.difficulty}`}>{t(g.difficulty as Key)}</span>
-        <span>♥ {likes}</span>
-        <span>{plays} {t("plays")}</span>
-        <span>{g.forks} {t("forks")}</span>
+        <Stat kind="likes" n={likes} label={t("like")} />
+        <Stat kind="plays" n={plays} label={t("plays")} />
+        <Stat kind="forks" n={g.forks} label={t("forks")} />
       </p>
       <div className="chips static">
         {[...g.tags.map((k) => t(k as Key)), ...g.focus.map(focusLabel)].map((label) => (
@@ -121,7 +163,8 @@ function Detail({ g }: { g: Groove }) {
         <button className={mode === "grid" ? "on" : ""} onClick={() => setMode("grid")}>{t("viewGrid")}</button>
       </div>
 
-      <GrooveView bars={g.bars} mode={mode} playing={player.active} getPosition={player.getPosition} onSeek={player.seek} />
+      <GrooveView bars={g.bars} mode={mode} playing={player.active}
+          running={player.playing} getPosition={player.getPosition} onSeek={player.seek} />
       </section>
 
     </main>

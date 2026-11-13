@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   DIFFICULTIES,
   DENOMINATORS,
@@ -47,8 +47,14 @@ export function EditorPage() {
   const { focus } = useOptions();
   const nav = useNavigate();
   const forkId = useSearchParams()[0].get("fork");
-  const [form, setForm] = useState<Draft>(() => (forkId ? BLANK : (store.getDraft() ?? BLANK)));
-  const [restored] = useState(() => !forkId && store.getDraft() !== null);
+  const editId = useParams().id ?? null;
+  const loadId = editId ?? forkId; // an existing groove is loaded instead of the draft
+  const token = editId ? store.getToken(editId) : null;
+  const [form, setForm] = useState<Draft>(() => (loadId ? BLANK : (store.getDraft() ?? BLANK)));
+  const [restored] = useState(() => {
+    const d = store.getDraft();
+    return !loadId && !!d && (d.title !== "" || d.bars.some((b) => Object.keys(b.rows).length > 0));
+  });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const player = usePlayer(form.bars, form.bpm);
@@ -59,27 +65,27 @@ export function EditorPage() {
   const litTimers = useRef(new Map<Instrument, number>());
 
   useEffect(() => {
-    if (!forkId) return;
-    api.get(forkId).then(
+    if (!loadId) return;
+    api.get(loadId).then(
       (g) =>
         setForm({
           title: g.title,
-          author: "",
+          author: editId ? g.author : "",
           description: g.description,
           tags: g.tags,
           difficulty: g.difficulty,
           focus: g.focus,
           bpm: g.bpm,
           bars: g.bars,
-          forkOf: g.id,
+          forkOf: editId ? (g.forkOf?.id ?? null) : g.id,
         }),
       () => setError(t("errGeneric")),
     );
-  }, [forkId]);
+  }, [loadId]);
 
   useEffect(() => {
-    if (!forkId) store.setDraft(form);
-  }, [form, forkId]);
+    if (!loadId) store.setDraft(form);
+  }, [form, loadId]);
 
   const patch = (p: Partial<Draft>) => setForm((f) => ({ ...f, ...p }));
   const setBars = (fn: (bars: Bar[]) => Bar[]) => setForm((f) => ({ ...f, bars: fn(f.bars) }));
@@ -128,13 +134,20 @@ export function EditorPage() {
     setError("");
     if (!form.title.trim()) return setError(t("errTitle"));
     if (!form.bars.some((b) => Object.keys(b.rows).length)) return setError(t("errEmpty"));
+    if (editId && !token) return setError(t("errNotOwner"));
     setBusy(true);
     try {
-      const { groove, token } = await api.create(form);
-      store.setToken(groove.id, token);
-      if (!forkId) store.clearDraft();
+      let id = editId;
+      if (editId) {
+        await api.update(editId, form, token!);
+      } else {
+        const created = await api.create(form);
+        id = created.groove.id;
+        store.setToken(id, created.token);
+        if (!forkId) store.clearDraft();
+      }
       player.stop();
-      nav(`/g/${groove.id}`);
+      nav(`/g/${id}`);
     } catch (e) {
       setError(e instanceof ApiError && e.status === 429 ? t("errRate") : t("errGeneric"));
       setBusy(false);
@@ -194,7 +207,8 @@ export function EditorPage() {
   return (
     <>
     <main className="container editor">
-      <h1>{forkId ? t("editorFork") : t("editorTitle")}</h1>
+      <h1>{editId ? t("editorEdit") : forkId ? t("editorFork") : t("editorTitle")}</h1>
+      {editId && !token && <p className="notice error">{t("errNotOwner")}</p>}
       {restored && form !== BLANK && (
         <p className="notice">
           {t("draftRestored")}{" "}
@@ -335,6 +349,7 @@ export function EditorPage() {
           mode="grid"
           editable
           playing={player.active}
+          running={player.playing}
           getPosition={player.getPosition}
           onSeek={player.seek}
           lit={lit}
@@ -360,7 +375,7 @@ export function EditorPage() {
       <div className="publish">
         {error && <span className="notice error inline">{error}</span>}
         <button className="btn primary big" disabled={busy} onClick={publish}>
-          {busy ? t("publishing") : t("publish")}
+          {busy ? (editId ? t("saving") : t("publishing")) : editId ? t("save") : t("publish")}
         </button>
       </div>
 

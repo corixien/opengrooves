@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   INSTRUMENTS,
   getLevel,
@@ -135,13 +135,22 @@ export function NotationPreview({ bars, playing = false, getPosition }: { bars: 
   const head = useRef<SVGLineElement>(null);
   const widths = bars.map(barWidth);
   const total = widths.reduce((a, b) => a + b, 0);
-  const viewW = widths[0] + (widths[1] ?? 0);
+  const [wide, setWide] = useState(true); // room for two bars; on a phone-sized card only one is shown
+  const viewW = widths[0] + (wide ? (widths[1] ?? 0) : 0);
   let x = 0;
   const parts = bars.map((bar, i) => {
     const el = <NotationContent key={i} bar={bar} x0={x} />;
     x += widths[i];
     return el;
   });
+
+  useEffect(() => {
+    const mq = matchMedia("(max-width: 720px)");
+    const apply = () => setWide(!mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     const reset = () => {
@@ -280,7 +289,10 @@ export type ViewMode = "grid" | "notes";
 interface ViewProps {
   bars: Bar[];
   mode: ViewMode;
+  /** Show the playhead (playing or paused). */
   playing: boolean;
+  /** Actually playing: the view follows the playhead. */
+  running?: boolean;
   getPosition: () => number | null;
   editable?: boolean;
   onEdit?: (barIndex: number, update: (b: Bar) => Bar) => void;
@@ -296,12 +308,16 @@ interface ViewProps {
 }
 
 /** Bars side by side in one horizontal scroller; the scroller follows the playhead. */
-export function GrooveView({ bars, mode, playing, getPosition, editable = false, onEdit, onHit, renderHeader, trailing, onSeek, lit }: ViewProps) {
+export function GrooveView({ bars, mode, playing, running = false, getPosition, editable = false, onEdit, onHit, renderHeader, trailing, onSeek, lit }: ViewProps) {
   const { t } = useI18n();
   const heads = useRef<(HTMLElement | null)[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
   const barsRef = useRef(bars);
   barsRef.current = bars;
+
+  // The view follows the playhead only while playing; scrolling by hand pauses that for a moment.
+  const manualUntil = useRef(0);
+  const manual = () => (manualUntil.current = performance.now() + 4000);
 
   useEffect(() => {
     const hide = () => heads.current.forEach((h) => h && (h.style.display = "none"));
@@ -309,9 +325,13 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
       hide();
       return;
     }
+    manualUntil.current = 0; // (re)starting playback brings the view back to the playhead
     let raf = 0;
-    const frame = () => {
+    let last = performance.now();
+    const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
       const pos = getPosition();
       hide();
       if (pos === null || pos < 0) return;
@@ -326,10 +346,11 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
           if (ph) {
             ph.style.display = "block";
             ph.style.left = `calc(var(--lead) + 100% * ${frac})`;
-            if (sc) {
+            if (sc && running && now > manualUntil.current) {
               const x = ph.getBoundingClientRect().left - sc.getBoundingClientRect().left + sc.scrollLeft;
               const target = Math.max(0, x - sc.clientWidth * 0.3);
-              if (Math.abs(target - sc.scrollLeft) > 0.5) sc.scrollLeft = target;
+              const diff = target - sc.scrollLeft;
+              if (Math.abs(diff) > 0.5) sc.scrollLeft += diff * (1 - Math.exp(-dt / 0.1)); // eased, so a jump glides
             }
           }
           return;
@@ -337,9 +358,22 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
         start = end;
       }
     };
-    frame();
+    raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [playing, getPosition]);
+  }, [playing, running, getPosition]);
+
+  /** Click -> position in quarters, snapped to the grid (cell start in the grid, nearest note in the notation). */
+  const seekAt = (i: number, e: React.MouseEvent<HTMLElement>) => {
+    const bar = bars[i];
+    const n = stepCount(bar);
+    const r = e.currentTarget.getBoundingClientRect();
+    const raw =
+      mode === "grid"
+        ? Math.floor(((e.clientX - r.left) / r.width) * n)
+        : Math.round(((e.clientX - r.left - LEAD) / (r.width - LEAD)) * n);
+    const step = Math.max(0, Math.min(n, raw));
+    onSeek?.(bars.slice(0, i).reduce((q, b) => q + barQuarters(b), 0) + step / stepsPerQuarter(bar.triplet));
+  };
 
   return (
     <div className={`rhythm view-${mode}${renderHeader ? " with-head" : ""}`}>
@@ -352,22 +386,18 @@ export function GrooveView({ bars, mode, playing, getPosition, editable = false,
           ))}
         </div>
       )}
-      <div className="bars" ref={scroller}>
+      <div className="bars" ref={scroller} onWheel={manual} onTouchMove={manual} onPointerDown={(e) => e.target === e.currentTarget && manual()}>
         {bars.map((bar, i) => {
           const w = mode === "grid" ? `calc(var(--cell) * ${stepCount(bar)})` : `${barWidth(bar)}px`;
           return (
             <div key={i} className="bar-block" style={{ ["--w" as string]: w, ["--lead" as string]: mode === "grid" ? "0px" : `${LEAD}px` }}>
               {renderHeader ? renderHeader(i) : <span className="bar-no">{i + 1}</span>}
               <div
-                className="bar-inner"
+                className={`bar-inner${onSeek && mode === "notes" ? " seekable" : ""}`}
                 onClick={
-                  onSeek && mode === "grid"
+                  onSeek
                     ? (e) => {
-                        if (!(e.target as Element).closest(".grid-head")) return;
-                        const r = e.currentTarget.getBoundingClientRect();
-                        const step = Math.min(stepCount(bar) - 1, Math.floor(((e.clientX - r.left) / r.width) * stepCount(bar)));
-                        const before = bars.slice(0, i).reduce((q, b) => q + barQuarters(b), 0);
-                        onSeek(before + step / stepsPerQuarter(bar.triplet));
+                        if (mode === "notes" || (e.target as Element).closest(".grid-head")) seekAt(i, e);
                       }
                     : undefined
                 }

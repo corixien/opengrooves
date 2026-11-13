@@ -105,6 +105,20 @@ const de = {
   draftRestored: "Entwurf wiederhergestellt.",
   discardDraft: "Neu beginnen",
 
+  editorEdit: "Groove bearbeiten",
+  save: "Speichern",
+  saving: "Speichere ...",
+  editGroove: "Bearbeiten",
+  errNotOwner: "Du kannst diesen Groove nur in der Browser-Sitzung bearbeiten, in der du ihn erstellt hast.",
+  requestDelete: "Löschung beantragen",
+  requestInfo: "Dieser Groove wurde nicht in dieser Browser-Sitzung erstellt. Du kannst die Löschung beantragen, sie wird geprüft.",
+  requestReason: "Grund (optional)",
+  requestSend: "Anfrage senden",
+  requestSent: "Anfrage gesendet. Danke!",
+  cancel: "Abbrechen",
+  copyLink: "Link kopieren",
+  linkCopied: "Link kopiert",
+
   // groove page
   notFound: "Groove nicht gefunden.",
   back: "Zurück",
@@ -137,6 +151,7 @@ const de = {
   // player
   play: "Abspielen",
   pause: "Pause",
+  moreOptions: "Weitere Einstellungen",
   resume: "Weiter",
   playHint: "Leertaste: Pause / Weiter, doppelt: von vorn",
   countInBars: "Takte Vorzähler",
@@ -259,6 +274,20 @@ const en: Record<Key, string> = {
   draftRestored: "Draft restored.",
   discardDraft: "Start over",
 
+  editorEdit: "Edit groove",
+  save: "Save",
+  saving: "Saving ...",
+  editGroove: "Edit",
+  errNotOwner: "You can only edit this groove in the browser session that created it.",
+  requestDelete: "Request deletion",
+  requestInfo: "This groove was not created in this browser session. You can request its deletion, it will be reviewed.",
+  requestReason: "Reason (optional)",
+  requestSend: "Send request",
+  requestSent: "Request sent. Thank you!",
+  cancel: "Cancel",
+  copyLink: "Copy link",
+  linkCopied: "Link copied",
+
   notFound: "Groove not found.",
   back: "Back",
   like: "Like",
@@ -289,6 +318,7 @@ const en: Record<Key, string> = {
 
   play: "Play",
   pause: "Pause",
+  moreOptions: "More settings",
   resume: "Resume",
   playHint: "Space: pause / resume, twice: restart",
   countInBars: "Count-in bars",
