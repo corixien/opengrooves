@@ -288,7 +288,10 @@ export function EditorPage() {
           <span className="step">3</span>
           <h2>{t("sectionPattern")}</h2>
         </header>
-        <p className="muted hint">{t("brushHint")}</p>
+        <p className="muted hint">
+          <span className="mouse-only">{t("brushHint")}</span>
+          <span className="touch-only">{t("brushHintTouch")}</span>
+        </p>
 
         <div className="midi-bar">
           <label className="btn">

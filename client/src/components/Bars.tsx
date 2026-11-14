@@ -42,6 +42,7 @@ const NOTE: Record<Instrument, { step: number; head: Head; foot?: true }> = {
   kick: { step: 1, head: "o", foot: true },
 };
 const yOf = (step: number) => LINE_Y0 - step * 4;
+const STEM_DX = 4.4; // stems sit on the right edge of the head (left for foot notes)
 
 function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
   const spb = stepsPerQuarter(bar.triplet); // beam group = one quarter note
@@ -79,24 +80,23 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
         els.push(<path key={`${inst}${i}`} d={`M${x} ${y - 5}L${x + 5} ${y}L${x} ${y + 5}L${x - 5} ${y}Z`} className={`${cls} cross`} />);
       } else {
         els.push(
-          <path key={`${inst}${i}`} d={`M${x - 4} ${y - 4}L${x + 4} ${y + 4}M${x + 4} ${y - 4}L${x - 4} ${y + 4}`} className={`${cls} cross`} />,
+          <path key={`${inst}${i}`} d={`M${x - 3.8} ${y - 3.8}L${x + 3.8} ${y + 3.8}M${x + 3.8} ${y - 3.8}L${x - 3.8} ${y + 3.8}`} className={`${cls} cross`} />,
         );
         if (head === "xo") els.push(<circle key={`${inst}${i}o`} cx={x} cy={y - 9} r={2.6} className={`${cls} ring`} />);
         if (head === "xh") els.push(<path key={`${inst}${i}h`} d={`M${x - 2.6} ${y - 9}h5.2M${x} ${y - 11.6}v5.2`} className={`${cls} ring`} />);
         if (head === "xb") els.push(<rect key={`${inst}${i}b`} x={x - 6} y={y - 6} width={12} height={12} className={`${cls} ring`} />);
       }
-      if (level === 3) els.push(<path key={`${inst}${i}a`} d={`M${x - 4} ${y - 15}L${x + 4} ${y - 12}L${x - 4} ${y - 9}`} className="accent-mark" />);
       if (level === 1) els.push(<text key={`${inst}${i}g`} x={x} y={y + 3.5} className="ghost-paren" textAnchor="middle">{"( )"}</text>);
     }
     if (minY !== Infinity) handStemTop[i] = Math.min(minY - 26, yOf(8) - 4);
     // stems
     if (minY !== Infinity) {
-      els.push(<line key={`s${i}`} x1={x + 5} x2={x + 5} y1={maxY} y2={handStemTop[i]} className="stem" data-stem={i} />);
+      els.push(<line key={`s${i}`} x1={x + STEM_DX} x2={x + STEM_DX} y1={maxY - 1} y2={handStemTop[i]} className="stem" data-stem={i} />);
     }
     for (const inst of INSTRUMENTS) {
       if (!NOTE[inst].foot || !getLevel(bar, inst, i)) continue;
       const fy = yOf(NOTE[inst].step);
-      els.push(<line key={`k${inst}${i}`} x1={x - 5} x2={x - 5} y1={fy} y2={fy + 26} className="stem" />);
+      els.push(<line key={`k${inst}${i}`} x1={x - STEM_DX} x2={x - STEM_DX} y1={fy + 1} y2={fy + 26} className="stem" />);
     }
   }
 
@@ -107,10 +107,10 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
     if (cols.length < 2) continue;
     const top = Math.min(...cols.map((c) => handStemTop[c]));
     // stems were drawn to their own top; extend them to the beam via an overlay line
-    for (const c of cols) els.push(<line key={`e${c}`} x1={xOf(c) + 5} x2={xOf(c) + 5} y1={handStemTop[c]} y2={top} className="stem" />);
-    els.push(<rect key={`beam${b}`} x={xOf(cols[0]) + 4} y={top} width={xOf(cols[cols.length - 1]) - xOf(cols[0]) + 2} height={3} className="beam" />);
+    for (const c of cols) els.push(<line key={`e${c}`} x1={xOf(c) + STEM_DX} x2={xOf(c) + STEM_DX} y1={handStemTop[c]} y2={top} className="stem" />);
+    els.push(<rect key={`beam${b}`} x={xOf(cols[0]) + STEM_DX - 0.65} y={top} width={xOf(cols[cols.length - 1]) - xOf(cols[0]) + 1.3} height={3} className="beam" />);
     if (bar.triplet) {
-      const mid = (xOf(cols[0]) + xOf(cols[cols.length - 1])) / 2 + 5;
+      const mid = (xOf(cols[0]) + xOf(cols[cols.length - 1])) / 2 + STEM_DX;
       els.push(<text key={`t${b}`} x={mid} y={top - 4} className="tuplet" textAnchor="middle">3</text>);
     }
   }
@@ -227,10 +227,16 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
     if (target > 0) onHit?.(inst, target); // sound only for newly placed notes
   };
 
+  const tap = useRef<{ cell: HTMLElement; x: number; y: number } | null>(null); // touch: edit on a tap, not on a scroll
+
   const down = (e: React.PointerEvent) => {
     if (!editable || (e.button !== 0 && e.button !== 2)) return;
     const cell = (e.target as Element).closest<HTMLElement>("[data-cell]");
     if (!cell) return;
+    if (e.pointerType !== "mouse") {
+      tap.current = { cell, x: e.clientX, y: e.clientY };
+      return;
+    }
     visited.current.clear();
     // left click cycles the level, right click erases (also while dragging)
     paint.current = e.button === 2 ? 0 : NEXT_LEVEL[getLevel(bar, cell.dataset.inst as Instrument, Number(cell.dataset.step))];
@@ -241,8 +247,19 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
     if (paint.current === null || e.pointerType !== "mouse") return;
     apply(document.elementFromPoint(e.clientX, e.clientY));
   };
-  const up = () => {
+  const up = (e: React.PointerEvent) => {
     paint.current = null;
+    const t = tap.current;
+    tap.current = null;
+    if (!t || e.type !== "pointerup" || Math.hypot(e.clientX - t.x, e.clientY - t.y) > 10) return;
+    visited.current.clear();
+    paint.current = NEXT_LEVEL[getLevel(bar, t.cell.dataset.inst as Instrument, Number(t.cell.dataset.step))];
+    apply(t.cell);
+    paint.current = null;
+  };
+  const cancel = () => {
+    paint.current = null;
+    tap.current = null;
   };
 
   return (
@@ -251,7 +268,7 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
-      onPointerCancel={up}
+      onPointerCancel={cancel}
       onContextMenu={editable ? (e) => e.preventDefault() : undefined}
     >
       <div className="grid-head">
@@ -391,13 +408,19 @@ export function GrooveView({ bars, mode, playing, running = false, getPosition, 
           const w = mode === "grid" ? `calc(var(--cell) * ${stepCount(bar)})` : `${barWidth(bar)}px`;
           return (
             <div key={i} className="bar-block" style={{ ["--w" as string]: w, ["--lead" as string]: mode === "grid" ? "0px" : `${LEAD}px` }}>
-              {renderHeader ? renderHeader(i) : <span className="bar-no">{i + 1}</span>}
+              {renderHeader ? (
+                renderHeader(i)
+              ) : (
+                <span className={`bar-no${onSeek ? " seekable" : ""}`} onClick={onSeek ? (e) => seekAt(i, e) : undefined}>
+                  {i + 1}
+                </span>
+              )}
               <div
-                className={`bar-inner${onSeek && mode === "notes" ? " seekable" : ""}`}
+                className={`bar-inner${onSeek && (mode === "notes" || !editable) ? " seekable" : ""}`}
                 onClick={
                   onSeek
                     ? (e) => {
-                        if (mode === "notes" || (e.target as Element).closest(".grid-head")) seekAt(i, e);
+                        if (mode === "notes" || !editable || (e.target as Element).closest(".grid-head")) seekAt(i, e);
                       }
                     : undefined
                 }

@@ -135,7 +135,7 @@ textarea { resize: vertical; width: 100%; }
 .on .dot { background: var(--bg); }
 .dot.l1 { width: 6px; height: 6px; border-radius: 50%; }
 .dot.l2 { width: 10px; height: 10px; }
-.dot.l3 { width: 14px; height: 14px; background: var(--accent) !important; }
+.dot.l3 { width: 14px; height: 14px; }
 
 /* bars */
 .playhead { display: none; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); pointer-events: none; z-index: 3; }
@@ -146,8 +146,7 @@ textarea { resize: vertical; width: 100%; }
 .cell i { display: block; background: var(--ink); border-radius: 2px; pointer-events: none; }
 .cell.l1 i { width: 7px; height: 7px; border-radius: 50%; opacity: 0.7; }
 .cell.l2 i { width: 14px; height: 14px; }
-.cell.l3 { background: var(--accent); }
-.cell.l3 i { width: 18px; height: 18px; background: #fff; }
+.cell.l3 i { width: 19px; height: 19px; }
 
 /* notation */
 svg.notation { display: block; }
@@ -159,9 +158,8 @@ svg.notation.preview { width: 100%; height: 100%; }
 .notation .note.cross { fill: none; stroke: var(--ink); stroke-width: 1.8; }
 .notation .note.ring { fill: none; stroke: var(--ink); stroke-width: 1.3; }
 .notation .note.l1 { opacity: 0.55; }
-.notation .note.l3 { fill: var(--ink); }
-.notation .note.cross.l3 { fill: none; }
-.notation .accent-mark { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+.notation .note.l3:not(.cross):not(.ring) { fill: var(--accent); }
+.notation .note.l3.cross, .notation .note.l3.ring { stroke: var(--accent); }
 .notation .ghost-paren { font-size: 10px; fill: var(--muted); }
 .notation .tuplet { font-size: 10px; font-weight: 700; fill: var(--ink); }
 
@@ -278,9 +276,11 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .card-notes { padding: 0 0 0 0.45rem; overflow: hidden; gap: 0.45rem; }
 .card-notes-link { display: block; flex: 1; min-width: 0; height: 100%; padding: 0.3rem 0.3rem 0.3rem 0; }
 .card-notes-link svg { display: block; }
-.card-play { flex: none; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--r); background: var(--accent); color: #fff; cursor: pointer; }
-.card-play:hover { filter: brightness(0.9); }
-.card-play[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.card-play { flex: none; display: flex; gap: 2px; align-self: center; }
+.card-play button { width: 1.5rem; height: 2rem; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--r); background: var(--accent); color: #fff; cursor: pointer; padding: 0; }
+.card-play button:hover:not(:disabled) { filter: brightness(0.9); }
+.card-play button.on { background: var(--ink); color: var(--bg); }
+.card-play button:disabled { background: var(--cell-off); color: var(--muted); cursor: default; }
 .card-body { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; text-decoration: none; }
 .card.playing { border-color: var(--accent); }
 .svg-playhead { stroke: var(--accent); stroke-width: 2; }
@@ -326,7 +326,7 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .listbar .count { margin: 0.4rem 0; }
 .volume { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--muted); }
 .volume input { width: 7.5rem; }
-.bar-inner.seekable { cursor: pointer; }
+.bar-inner.seekable, .bar-no.seekable { cursor: pointer; }
 .bar-inner.seekable svg { user-select: none; }
 
 .stat { display: inline-flex; align-items: center; gap: 0.3rem; font-variant-numeric: tabular-nums; }
@@ -367,4 +367,32 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 
 @media (max-width: 720px) {
   .field.grow textarea { min-height: 5.5rem; height: 5.5rem; flex: none; }
+}
+
+/* editor on phones: the single-column rule must come after the base .panels rule */
+@media (max-width: 720px) {
+  .panels { grid-template-columns: minmax(0, 1fr); }
+  .panel { min-width: 0; }
+}
+
+.touch-only { display: none; }
+@media (pointer: coarse) {
+  .touch-only { display: inline; }
+  .mouse-only { display: none; }
+}
+
+@media (max-width: 720px) {
+  :root { --cell: 32px; --label-w: 54px; --head-h: 78px; }
+  .container { padding-left: 0.6rem; padding-right: 0.6rem; }
+  .rhythm { margin: 0 0.5rem 0.8rem; }
+  .midi-bar { margin: 0 0.5rem 0.7rem; }
+  .midi-bar .btn, .midi-bar .toggle { padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+  .midi-note { margin-left: 0.5rem; margin-right: 0.5rem; }
+  .panel > .hint { margin: 0.6rem 0.5rem; }
+  .request { margin-left: 0.5rem; margin-right: 0.5rem; }
+  .labels { padding-right: 0.4rem; width: var(--label-w); }
+  .labels button { font-size: 0.66rem; line-height: 1.05; white-space: normal; overflow-wrap: anywhere; }
+  .rhythm .bars > .bar-block { --min-w: 14.5rem; }
+  .rhythm.with-head { --min-w: 14.5rem; }
+  .add-bar { min-width: 5.5rem; }
 }

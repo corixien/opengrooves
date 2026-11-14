@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Groove } from "../../../shared/groove";
-import { getCardPosition, toggleCard } from "../audio/cardPlayback";
+import { getCardPosition, pauseCard, playCard } from "../audio/cardPlayback";
 import { usePlayback } from "../audio/playback";
 import { useI18n, type Key } from "../i18n";
 import { usePlays } from "../audio/playCount";
@@ -18,13 +18,24 @@ export function GrooveCard({ g }: { g: Groove }) {
   return (
     <article className={`card${playing ? " playing" : ""}`}>
       <div className="card-notes">
-        <button className="card-play" onClick={() => void toggleCard(g)} aria-pressed={playing} aria-label={`${playing ? t("pause") : t("play")}: ${g.title}`}>
-          {playing ? (
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 2h2.6v10H3zM8.4 2H11v10H8.4z" fill="currentColor" /></svg>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5l9 5.5-9 5.5z" fill="currentColor" /></svg>
-          )}
-        </button>
+        <div className="card-play">
+          <button onClick={() => void playCard(g)} title={t("playFromStart")} aria-label={`${t("playFromStart")}: ${g.title}`}>
+            <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2h2v10H2zM6 1.5l7 5.5-7 5.5z" fill="currentColor" /></svg>
+          </button>
+          <button
+            className={playing ? "on" : undefined}
+            disabled={!mine || !pb.active}
+            onClick={pauseCard}
+            title={playing ? t("pause") : t("resume")}
+            aria-label={`${playing ? t("pause") : t("resume")}: ${g.title}`}
+          >
+            {playing ? (
+              <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 2h2.6v10H3zM8.4 2H11v10H8.4z" fill="currentColor" /></svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5l9 5.5-9 5.5z" fill="currentColor" /></svg>
+            )}
+          </button>
+        </div>
         <Link to={`/g/${g.id}`} className="card-notes-link" aria-label={g.title}>
           <NotationPreview bars={g.bars} playing={mine && pb.active} getPosition={getCardPosition} />
         </Link>

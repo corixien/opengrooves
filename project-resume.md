@@ -21,6 +21,9 @@ Bars side by side in one horizontal scroller (follows playhead), click cycle nor
 ## Update (round 4)
 Time signatures n/den (den 1,2,4,8,16; max 8 quarters, max 16 beats; triplets only den<=4; BPM = quarters/min), card play buttons (one at a time, no metronome), preview shows first 2 bars and follows playhead, language dropdown, flat dropdown borders. Fixed .grid class collision that broke horizontal scroll.
 
+## Update (round 6)
+Card: two half buttons (play from start | pause/resume, disabled when idle); resume no longer flashes the playhead (getPosition returns first mark while starting). Pause snaps to step lines (engine.pause: back if < 30% into a step, else runs on to the next step, then settle()). Read-only grid: tap anywhere seeks; bar-number row seeks in grid and notation. Notation: stems on head edges, accent = orange head (no mark; CSS ordering bug that filled ring/china heads fixed). Grid accent: no orange cell background. Mobile editor: `.panels` single-column rule was overridden by later base rule (page was wider than the phone) - fixed at end of styles.css; touch edits grid cells on tap only (drag scrolls), touch hint text, compact labels/cell 32px.
+
 ## Next / open
 - Deploy: Render (web service: build `npm run build`, start `npm start`) + Neon (DATABASE_URL; never test against branch production)
 - Possible: drag-paint on touch, MIDI/PDF export, report/moderation, real engraving polish (rests, flags)

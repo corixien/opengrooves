@@ -119,6 +119,7 @@ class Engine {
   private marks: { time: number; beat: number }[] = [];
   private live = new Set<AudioScheduledSourceNode>();
   private openHat: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+  private pauseTimer: number | null = null;
 
   setBars(bars: Bar[]) {
     this.bars = bars;
@@ -344,6 +345,8 @@ class Engine {
   private halt() {
     if (this.timer !== null) window.clearInterval(this.timer);
     this.timer = null;
+    if (this.pauseTimer !== null) window.clearTimeout(this.pauseTimer);
+    this.pauseTimer = null;
     for (const src of this.live) {
       try {
         src.stop();
@@ -363,12 +366,41 @@ class Engine {
     this.bump();
   }
 
-  /** Stops but remembers the position so start(resumeAt) continues from there. */
+  /** Quarter positions of the step lines (16ths, or triplet steps) just before and after `pos`. */
+  private stepsAround(pos: number): { prev: number; next: number } {
+    let start = 0;
+    for (let i = 0; i < this.bars.length; i++) {
+      const bar = this.bars[i];
+      const q = barQuarters(bar);
+      if (pos < start + q || i === this.bars.length - 1) {
+        const spq = stepsPerQuarter(bar.triplet);
+        const k = Math.floor((pos - start) * spq + 1e-6);
+        return { prev: start + k / spq, next: start + (k + 1) / spq };
+      }
+      start += q;
+    }
+    return { prev: pos, next: pos };
+  }
+
+  /**
+   * Stops and remembers the position so start(resumeAt) continues from there. The position always
+   * lies on a step line: just after one it goes back, otherwise playback runs on to the next one.
+   */
   pause() {
-    if (!this.playing) return;
+    if (!this.playing || this.pauseTimer !== null) return;
     const pos = this.phase === "main" ? this.getPosition() : null;
+    if (pos === null || pos <= 0) return this.settle(null);
+    const { prev, next } = this.stepsAround(pos);
+    const stepSec = this.spb() * (next - prev);
+    const wait = (next - pos) * this.spb() - (this.ctx?.outputLatency || this.ctx?.baseLatency || 0) - 0.005;
+    if (pos - prev < 0.3 * (next - prev) || wait <= 0 || wait > stepSec) return this.settle(prev);
+    this.pauseTimer = window.setTimeout(() => this.settle(next), wait * 1000);
+  }
+
+  private settle(pos: number | null) {
     this.halt();
-    this.pausedAt = pos !== null && pos > 0 ? pos : null;
+    const end = this.bars.reduce((q, b) => q + barQuarters(b), 0);
+    this.pausedAt = pos !== null && pos > 0 && pos < end - 1e-9 ? pos : null;
     this.bump();
   }
 
@@ -390,7 +422,7 @@ class Engine {
     while (m.length > 2 && m[1].time <= now - 1) m.shift();
     let cur = -1;
     for (let i = 0; i < m.length && m[i].time <= now; i++) cur = i;
-    if (cur < 0) return null;
+    if (cur < 0) return m[0]?.beat ?? null; // starting: already at the first position
     const a = m[cur];
     const b = m[cur + 1];
     // Marks are only scheduled ~AHEAD seconds early, so extrapolate with the current tempo
