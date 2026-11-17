@@ -49,3 +49,6 @@ Card: single play/pause toggle again (pressing play after pause restarts). Playe
 - GrooveView follows the playhead only while running, eased, and pauses following ~4 s after a manual scroll/touch/scrollbar drag (this was the "cannot scroll" bug). Seeking never scrolls; notation bars are clickable (nearest note), grid ruler uses cell start.
 - Server: PUT /api/grooves/:id (owner edit), POST /api/grooves/:id/delete-request, table delete_requests. Client: /edit/:id, request form, copy link, Stat icons.
 - Mobile: top bar two rows, dock folds extras behind a toggle, card preview shows one bar under 720px, draft notice only for non-empty drafts.
+
+## Update (round 8)
+- Card pause button stays orange; Home toolbar shows a Reset button when filters/search are active; starter "Samba" (2/4) added. Bossa clave (0 3 6 10 13) and son clave (0 3 6 10 12) verified.

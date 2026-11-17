@@ -278,7 +278,6 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .card-notes-link svg { display: block; }
 .card-play { flex: none; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--r); background: var(--accent); color: #fff; cursor: pointer; }
 .card-play:hover { filter: brightness(0.9); }
-.card-play[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .card-body { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; text-decoration: none; }
 .card.playing { border-color: var(--accent); }
 .svg-playhead { stroke: var(--accent); stroke-width: 2; }

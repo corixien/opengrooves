@@ -118,6 +118,9 @@ export const STARTERS: GrooveInput[] = [
   g("Bossa Nova", 130, "intermediate", ["latin", "jazz"], ["independence", "timing"], "Straight hi-hat eighths, side-stick bossa clave and the typical 'boom-boom' bass drum.", [
     bar({ hhClosed: rockHat, sidestick: "0 3 6 10 13", kick: "0 6 8 14", hhPedal: "4 12" }),
   ]),
+  g("Samba", 100, "advanced", ["latin"], ["independence", "hihat", "timing"], "Samba on the drum set in 2/4: steady sixteenth hi-hat like a shaker, bass drum on the beat plus the 'a' (surdo feel), hi-hat foot on the beats.", [
+    bar({ hhClosed: "*1:1 *2:2", kick: "0 3 4 7", hhPedal: "0 4" }, 2, 4),
+  ]),
   g("Son Clave 3-2 Groove", 110, "advanced", ["latin"], ["independence", "timing"], "Son clave 3-2 on the side stick with a simple foot pattern and cowbell quarters.", [
     bar({ sidestick: "0 3 6 10 12", rideBell: "0 4 8 12", hhPedal: "4 12", kick: "0 8" }),
   ]),

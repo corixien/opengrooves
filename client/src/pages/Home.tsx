@@ -95,6 +95,11 @@ export function Home() {
           {t("filters")}
           {active > 0 && <b className="badge">{active}</b>}
         </button>
+        {(active > 0 || qInput) && (
+          <button className="btn" onClick={reset}>
+            {t("resetFilters")}
+          </button>
+        )}
       </section>
 
       {open && (
