@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   INSTRUMENTS,
   getLevel,
@@ -42,7 +42,9 @@ const NOTE: Record<Instrument, { step: number; head: Head; foot?: true }> = {
   kick: { step: 1, head: "o", foot: true },
 };
 const yOf = (step: number) => LINE_Y0 - step * 4;
-const STEM_DX = 4.4; // stems sit on the right edge of the head (left for foot notes)
+const STEM_DX = 4.3; // stems sit on the right edge of the head (left for foot notes)
+/** Where a stem leaves the head: the outer tip of a cross, the edge of an oval or diamond. */
+const stemAnchor = (head: Head, y: number, down: boolean) => (head === "o" ? y + (down ? 1 : -1) : head === "d" ? y : y + (down ? 3.8 : -3.8));
 
 function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
   const spb = stepsPerQuarter(bar.triplet); // beam group = one quarter note
@@ -63,7 +65,7 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
   for (let i = 0; i < n; i++) {
     const x = xOf(i);
     let minY = Infinity;
-    let maxY = -Infinity;
+    let maxY = -Infinity; // lowest point where a hand stem starts
     for (const inst of INSTRUMENTS) {
       const level = getLevel(bar, inst, i);
       if (!level) continue;
@@ -72,7 +74,7 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
       const cls = `note l${level}`;
       if (!foot) {
         minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y);
+        maxY = Math.max(maxY, stemAnchor(head, y, true) - (head === "o" ? 2 : 0));
       }
       if (head === "o") {
         els.push(<ellipse key={`${inst}${i}`} cx={x} cy={y} rx={5} ry={3.6} className={cls} transform={`rotate(-18 ${x} ${y})`} />);
@@ -86,17 +88,20 @@ function NotationContent({ bar, x0 }: { bar: Bar; x0: number }) {
         if (head === "xh") els.push(<path key={`${inst}${i}h`} d={`M${x - 2.6} ${y - 9}h5.2M${x} ${y - 11.6}v5.2`} className={`${cls} ring`} />);
         if (head === "xb") els.push(<rect key={`${inst}${i}b`} x={x - 6} y={y - 6} width={12} height={12} className={`${cls} ring`} />);
       }
-      if (level === 1) els.push(<text key={`${inst}${i}g`} x={x} y={y + 3.5} className="ghost-paren" textAnchor="middle">{"( )"}</text>);
+      if (level === 1)
+        els.push(
+          <path key={`${inst}${i}g`} d={`M${x - 7.5} ${y - 5.5}Q${x - 11} ${y} ${x - 7.5} ${y + 5.5}M${x + 8.5} ${y - 5.5}Q${x + 12} ${y} ${x + 8.5} ${y + 5.5}`} className="ghost-paren" />,
+        );
     }
     if (minY !== Infinity) handStemTop[i] = Math.min(minY - 26, yOf(8) - 4);
     // stems
     if (minY !== Infinity) {
-      els.push(<line key={`s${i}`} x1={x + STEM_DX} x2={x + STEM_DX} y1={maxY - 1} y2={handStemTop[i]} className="stem" data-stem={i} />);
+      els.push(<line key={`s${i}`} x1={x + STEM_DX} x2={x + STEM_DX} y1={maxY} y2={handStemTop[i]} className="stem" data-stem={i} />);
     }
     for (const inst of INSTRUMENTS) {
       if (!NOTE[inst].foot || !getLevel(bar, inst, i)) continue;
       const fy = yOf(NOTE[inst].step);
-      els.push(<line key={`k${inst}${i}`} x1={x - STEM_DX} x2={x - STEM_DX} y1={fy + 1} y2={fy + 26} className="stem" />);
+      els.push(<line key={`k${inst}${i}`} x1={x - STEM_DX} x2={x - STEM_DX} y1={stemAnchor(NOTE[inst].head, fy, true)} y2={fy + 26} className="stem" />);
     }
   }
 
@@ -203,11 +208,12 @@ const NEXT_LEVEL: Level[] = [2, 0, 3, 1]; // indexed by current level (0 empty, 
 interface GridProps {
   bar: Bar;
   editable: boolean;
+  insts: readonly Instrument[];
   onEdit?: (update: (b: Bar) => Bar) => void;
   onHit?: (inst: Instrument, level: Level) => void;
 }
 
-const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProps) {
+const BarGrid = memo(function BarGrid({ bar, editable, insts, onEdit, onHit }: GridProps) {
   const n = stepCount(bar);
   const perBeat = n / bar.beats; // steps per beat of the time signature
   const paint = useRef<Level | null>(null);
@@ -278,7 +284,7 @@ const BarGrid = memo(function BarGrid({ bar, editable, onEdit, onHit }: GridProp
           </span>
         ))}
       </div>
-      {INSTRUMENTS.map((inst) => (
+      {insts.map((inst) => (
         <div key={inst} className="grid-row">
           {Array.from({ length: n }, (_, i) => {
             const level = getLevel(bar, inst, i);
@@ -329,6 +335,12 @@ export function GrooveView({ bars, mode, playing, running = false, getPosition, 
   const { t } = useI18n();
   const heads = useRef<(HTMLElement | null)[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
+  // Viewing shows only the instruments the groove uses; the editor always shows the whole kit.
+  const insts = useMemo(() => {
+    if (editable) return INSTRUMENTS;
+    const used = INSTRUMENTS.filter((i) => bars.some((b) => b.rows[i]?.includes("1") || b.rows[i]?.includes("2") || b.rows[i]?.includes("3")));
+    return used.length ? used : INSTRUMENTS;
+  }, [bars, editable]);
   const barsRef = useRef(bars);
   barsRef.current = bars;
 
@@ -396,7 +408,7 @@ export function GrooveView({ bars, mode, playing, running = false, getPosition, 
     <div className={`rhythm view-${mode}${renderHeader ? " with-head" : ""}`}>
       {mode === "grid" && (
         <div className="labels">
-          {INSTRUMENTS.map((inst) => (
+          {insts.map((inst) => (
             <button key={inst} type="button" className={lit?.has(inst) ? "lit" : undefined} onClick={() => (onHit ?? engine.preview.bind(engine))(inst, 2)}>
               {t(`inst_${inst}`)}
             </button>
@@ -426,7 +438,7 @@ export function GrooveView({ bars, mode, playing, running = false, getPosition, 
                 }
               >
                 {mode === "grid" ? (
-                  <BarGrid bar={bar} editable={editable} onEdit={onEdit ? (u) => onEdit(i, u) : undefined} onHit={onHit} />
+                  <BarGrid bar={bar} editable={editable} insts={insts} onEdit={onEdit ? (u) => onEdit(i, u) : undefined} onHit={onHit} />
                 ) : (
                   <NotationBar bar={bar} />
                 )}

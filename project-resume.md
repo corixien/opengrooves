@@ -24,6 +24,9 @@ Time signatures n/den (den 1,2,4,8,16; max 8 quarters, max 16 beats; triplets on
 ## Update (round 6)
 Card: two half buttons (play from start | pause/resume, disabled when idle); resume no longer flashes the playhead (getPosition returns first mark while starting). Pause snaps to step lines (engine.pause: back if < 30% into a step, else runs on to the next step, then settle()). Read-only grid: tap anywhere seeks; bar-number row seeks in grid and notation. Notation: stems on head edges, accent = orange head (no mark; CSS ordering bug that filled ring/china heads fixed). Grid accent: no orange cell background. Mobile editor: `.panels` single-column rule was overridden by later base rule (page was wider than the phone) - fixed at end of styles.css; touch edits grid cells on tap only (drag scrolls), touch hint text, compact labels/cell 32px.
 
+## Update (round 7)
+Card: single play/pause toggle again (pressing play after pause restarts). Player bar: big Play/Pause; when paused it splits into restart | resume, either press brings back the big Pause. Notation: stems start at the head tip (cross) / edge (oval), ghost notes use drawn parentheses. Read-only grid shows only used instruments. Theme is a dropdown like language. Mobile: more-button same size as +/-, action buttons in a 2-col grid, search+sort+filter on one row, form inputs bottom-aligned, tempo label shortened. server/starters.ts seeds ~35 starter grooves once per DB (app_state marker); scripts/seed.ts removed. Local dev DB still contains the old demo grooves (not deleted).
+
 ## Next / open
 - Deploy: Render (web service: build `npm run build`, start `npm start`) + Neon (DATABASE_URL; never test against branch production)
 - Possible: drag-paint on touch, MIDI/PDF export, report/moderation, real engraving polish (rests, flags)

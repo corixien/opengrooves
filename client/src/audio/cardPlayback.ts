@@ -1,7 +1,6 @@
 import type { Groove } from "../../../shared/groove";
 import { store } from "../storage";
 import { DEFAULT_SETTINGS, engine } from "./engine";
-import { toggle } from "./playback";
 import "./playCount";
 
 export const getCardPosition = () => engine.getPosition();
@@ -18,6 +17,3 @@ export async function playCard(g: Groove) {
     /* sounds failed to load; the button just stays in its idle state */
   }
 }
-
-/** Pauses a playing card or continues a paused one from where it stopped. */
-export const pauseCard = toggle;

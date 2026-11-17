@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import { createApp } from "./app.ts";
 import { openDb, type Db } from "./db.ts";
 import { emptyBar, setLevel } from "../shared/groove.ts";
+import { STARTERS } from "./starters.ts";
 
 let db: Db;
 let server: Server;
@@ -105,5 +106,16 @@ describe("grooves api", () => {
     await call(`/grooves/${groove.id}`, { method: "DELETE", headers: { "x-owner-token": token } });
     expect(await db.query("select 1 from delete_requests")).toHaveLength(0); // cascade
     expect((await call(`/grooves/${fork.id}`)).status).toBe(200);
+  });
+});
+
+describe("starter grooves", () => {
+  it("are valid, uniquely titled and seeded once", async () => {
+    expect(new Set(STARTERS.map((g) => g.title)).size).toBe(STARTERS.length);
+    const d = await openDb(undefined, ":memory:", true);
+    await d.close();
+    const again = await openDb(undefined, ":memory:", true);
+    expect(await again.query("select 1 from grooves")).toHaveLength(STARTERS.length);
+    await again.close();
   });
 });

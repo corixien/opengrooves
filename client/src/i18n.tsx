@@ -9,7 +9,7 @@ const de = {
   themeDark: "Dunkel",
 
   // home
-  searchPlaceholder: "Grooves suchen (Titel, Name, Beschreibung)",
+  searchPlaceholder: "Grooves suchen",
   filters: "Filter",
   resetFilters: "Zurücksetzen",
   sortBy: "Sortierung",
@@ -84,7 +84,7 @@ const de = {
   fieldTitle: "Titel",
   fieldAuthor: "Dein Name (optional)",
   fieldDescription: "Beschreibung (optional)",
-  fieldBpm: "Standard-Tempo",
+  fieldBpm: "Tempo",
   brushHintTouch: "Tippen setzt eine Note. Weiter tippen: laut, leise (Ghost), dann gelöscht. Wischen scrollt das Raster.",
   brushHint: "Klick setzt eine Note. Weiter klicken: laut, leise (Ghost), dann gelöscht. Ziehen malt mehrere.",
   bar: "Takt",
@@ -184,7 +184,7 @@ const en: Record<Key, string> = {
   themeLight: "Light",
   themeDark: "Dark",
 
-  searchPlaceholder: "Search grooves (title, name, description)",
+  searchPlaceholder: "Search grooves",
   filters: "Filters",
   resetFilters: "Reset",
   sortBy: "Sort by",

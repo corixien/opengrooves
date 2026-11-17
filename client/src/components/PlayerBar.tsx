@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MAX_BPM, MIN_BPM } from "../../../shared/groove";
+import { restart, toggle } from "../audio/playback";
 import type { PlayerState } from "../audio/usePlayer";
 import { useI18n } from "../i18n";
 import { Select } from "./Select";
@@ -17,15 +18,20 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
   const clamp = (v: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(v) || MIN_BPM));
   return (
     <div className={`player${more ? " open" : ""}`}>
-      <button
-        className="btn primary play"
-        onClick={player.tap}
-        disabled={status !== "ready"}
-        aria-pressed={playing}
-        title={t("playHint")}
-      >
-        {status === "loading" ? t("loadingSounds") : status === "error" ? t("soundsError") : playing ? `❚❚ ${t("pause")}` : paused ? `▶ ${t("resume")}` : `▶ ${t("play")}`}
-      </button>
+      {status === "ready" && paused ? (
+        <div className="play split">
+          <button className="btn primary" onClick={restart} title={t("playFromStart")} aria-label={t("playFromStart")}>
+            <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2h2v10H2zM6 1.5l7 5.5-7 5.5z" fill="currentColor" /></svg>
+          </button>
+          <button className="btn primary" onClick={toggle} title={t("resume")} aria-label={t("resume")}>
+            <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5l9 5.5-9 5.5z" fill="currentColor" /></svg>
+          </button>
+        </div>
+      ) : (
+        <button className="btn primary play" onClick={player.tap} disabled={status !== "ready"} aria-pressed={playing} title={t("playHint")}>
+          {status === "loading" ? t("loadingSounds") : status === "error" ? t("soundsError") : playing ? `❚❚ ${t("pause")}` : `▶ ${t("play")}`}
+        </button>
+      )}
 
       <label className="field tempo">
         <span>{t("tempo")}</span>

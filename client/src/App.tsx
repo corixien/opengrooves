@@ -50,9 +50,17 @@ export function App() {
               { value: "en", label: "English" },
             ]}
           />
-          <button className="btn small" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-            {theme === "dark" ? t("themeLight") : t("themeDark")}
-          </button>
+          <Select
+            className="theme"
+            alignRight
+            label="Theme"
+            value={theme}
+            onChange={(v) => setTheme(v as Theme)}
+            options={[
+              { value: "light", label: t("themeLight") },
+              { value: "dark", label: t("themeDark") },
+            ]}
+          />
         </div>
       </header>
       <Routes>

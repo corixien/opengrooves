@@ -1,6 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import pg from "pg";
 import { mkdirSync } from "node:fs";
+import { seedStarters } from "./starters.ts";
 
 export interface Db {
   query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
@@ -46,6 +47,10 @@ create table if not exists delete_requests (
   created_at timestamptz not null default now(),
   unique (groove_id, client_id)
 );
+create table if not exists app_state (
+  key text primary key,
+  value text not null
+);
 create table if not exists likes (
   groove_id text not null references grooves(id) on delete cascade,
   client_id text not null,
@@ -74,8 +79,9 @@ const DEFAULT_FOCUS: [string, string, string][] = [
   ["doubleKick", "Doppelkick", "Double kick"],
 ];
 
-/** DATABASE_URL -> Postgres (Neon etc.); otherwise embedded PGlite (dir, or in-memory when dir is ":memory:"). */
-export async function openDb(databaseUrl?: string, pgliteDir = "data/pglite"): Promise<Db> {
+/** The starter grooves (server/starters.ts) are added once per database unless `starters` is false (tests).
+ * DATABASE_URL -> Postgres (Neon etc.); otherwise embedded PGlite (dir, or in-memory when dir is ":memory:"). */
+export async function openDb(databaseUrl?: string, pgliteDir = "data/pglite", starters = pgliteDir !== ":memory:"): Promise<Db> {
   let db: Db;
   if (databaseUrl) {
     const pool = new pg.Pool({ connectionString: databaseUrl, max: 5 });
@@ -104,5 +110,6 @@ export async function openDb(databaseUrl?: string, pgliteDir = "data/pglite"): P
       [id, de, en, (i + 1) * 10],
     );
   }
+  if (starters) await seedStarters(db);
   return db;
 }

@@ -157,10 +157,10 @@ svg.notation.preview { width: 100%; height: 100%; }
 .notation .note { fill: var(--ink); }
 .notation .note.cross { fill: none; stroke: var(--ink); stroke-width: 1.8; }
 .notation .note.ring { fill: none; stroke: var(--ink); stroke-width: 1.3; }
-.notation .note.l1 { opacity: 0.55; }
+.notation .note.l1 { opacity: 0.8; }
 .notation .note.l3:not(.cross):not(.ring) { fill: var(--accent); }
 .notation .note.l3.cross, .notation .note.l3.ring { stroke: var(--accent); }
-.notation .ghost-paren { font-size: 10px; fill: var(--muted); }
+.notation .ghost-paren { fill: none; stroke: var(--ink); stroke-width: 1.2; }
 .notation .tuplet { font-size: 10px; font-weight: 700; fill: var(--ink); }
 
 /* detail */
@@ -276,11 +276,9 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .card-notes { padding: 0 0 0 0.45rem; overflow: hidden; gap: 0.45rem; }
 .card-notes-link { display: block; flex: 1; min-width: 0; height: 100%; padding: 0.3rem 0.3rem 0.3rem 0; }
 .card-notes-link svg { display: block; }
-.card-play { flex: none; display: flex; gap: 2px; align-self: center; }
-.card-play button { width: 1.5rem; height: 2rem; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--r); background: var(--accent); color: #fff; cursor: pointer; padding: 0; }
-.card-play button:hover:not(:disabled) { filter: brightness(0.9); }
-.card-play button.on { background: var(--ink); color: var(--bg); }
-.card-play button:disabled { background: var(--cell-off); color: var(--muted); cursor: default; }
+.card-play { flex: none; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--r); background: var(--accent); color: #fff; cursor: pointer; }
+.card-play:hover { filter: brightness(0.9); }
+.card-play[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .card-body { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; text-decoration: none; }
 .card.playing { border-color: var(--accent); }
 .svg-playhead { stroke: var(--accent); stroke-width: 2; }
@@ -396,3 +394,35 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
   .rhythm.with-head { --min-w: 14.5rem; }
   .add-bar { min-width: 5.5rem; }
 }
+
+/* player: big play/pause, or restart + resume once paused */
+.player .play { height: 2.9rem; padding-top: 0; padding-bottom: 0; }
+.player .play.split { display: flex; gap: 2px; padding: 0; min-width: 8.5rem; background: none; border: 0; }
+.player .split button { flex: 1; justify-content: center; padding: 0; height: 100%; }
+.player .split button:first-child { border-radius: var(--r) 0 0 var(--r); }
+.player .split button:last-child { border-radius: 0 var(--r) var(--r) 0; }
+
+/* forms: inputs share a baseline even when a label wraps */
+.form { align-items: end; }
+
+.topbar .select-btn { min-width: 0; }
+
+@media (max-width: 720px) {
+  :root { --tap: 2.75rem; }
+  .player .play, .player .split button { height: var(--tap); }
+  .player .play.split { min-width: 6rem; }
+  .player .tempo-row { align-items: stretch; }
+  .player .tempo-row input[type="number"] { height: var(--tap); }
+  .player .tempo-row .btn, .player .more { width: var(--tap); height: var(--tap); padding: 0; justify-content: center; }
+
+  /* groove page actions: an even two-column grid */
+  .detail-head { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+  .head-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; width: 100%; }
+  .head-actions .btn { width: 100%; justify-content: center; text-align: center; }
+
+  /* search, sort and filter stay on one row */
+  .toolbar { flex-wrap: nowrap; gap: 0.4rem; }
+  .toolbar .search { flex: 1 1 0; min-width: 0; }
+  .toolbar .select-btn, .toolbar .btn { padding-left: 0.55rem; padding-right: 0.55rem; }
+}
+.head-actions { margin-bottom: 0.9rem; }
