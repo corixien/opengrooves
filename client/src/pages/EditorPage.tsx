@@ -1,3 +1,4 @@
+import { BpmInput } from "../components/BpmInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -7,8 +8,6 @@ import {
   canTriplet,
   maxBeats,
   MAX_FOCUS,
-  MAX_BPM,
-  MIN_BPM,
   TAGS,
   emptyBar,
   resizeBar,
@@ -241,13 +240,7 @@ export function EditorPage() {
             </label>
             <label className="field">
               <span>{t("fieldBpm")}</span>
-              <input
-                type="number"
-                min={MIN_BPM}
-                max={MAX_BPM}
-                value={form.bpm}
-                onChange={(e) => patch({ bpm: Math.min(MAX_BPM, Math.max(MIN_BPM, Number(e.target.value) || MIN_BPM)) })}
-              />
+              <BpmInput value={form.bpm} onChange={(bpm) => patch({ bpm })} />
             </label>
             <label className="field wide grow">
               <span>{t("fieldDescription")}</span>

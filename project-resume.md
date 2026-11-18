@@ -52,3 +52,4 @@ Card: single play/pause toggle again (pressing play after pause restarts). Playe
 
 ## Update (round 8)
 - Card pause button stays orange; Home toolbar shows a Reset button when filters/search are active; starter "Samba" (2/4) added. Bossa clave (0 3 6 10 13) and son clave (0 3 6 10 12) verified.
+- BPM entry: client/src/components/BpmInput.tsx (free text, commit on blur/Enter, hold-to-repeat +/-); used in PlayerBar and editor default tempo.

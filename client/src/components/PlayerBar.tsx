@@ -3,6 +3,7 @@ import { MAX_BPM, MIN_BPM } from "../../../shared/groove";
 import { restart, toggle } from "../audio/playback";
 import type { PlayerState } from "../audio/usePlayer";
 import { useI18n } from "../i18n";
+import { BpmInput } from "./BpmInput";
 import { Select } from "./Select";
 
 interface Props {
@@ -15,7 +16,6 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
   const { t } = useI18n();
   const { settings: s, update, playing, paused, status } = player;
   const [more, setMore] = useState(false); // phones: sliders and options fold away
-  const clamp = (v: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(v) || MIN_BPM));
   return (
     <div className={`player${more ? " open" : ""}`}>
       {status === "ready" && paused ? (
@@ -35,11 +35,7 @@ export function PlayerBar({ player, bpm, onBpm }: Props) {
 
       <label className="field tempo">
         <span>{t("tempo")}</span>
-        <div className="tempo-row">
-          <button className="btn small" onClick={() => onBpm(clamp(bpm - 1))} aria-label="-1">−</button>
-          <input type="number" min={MIN_BPM} max={MAX_BPM} value={bpm} onChange={(e) => onBpm(clamp(Number(e.target.value)))} />
-          <button className="btn small" onClick={() => onBpm(clamp(bpm + 1))} aria-label="+1">+</button>
-        </div>
+        <BpmInput value={bpm} onChange={onBpm} stepper />
         <input type="range" min={MIN_BPM} max={MAX_BPM} value={bpm} onChange={(e) => onBpm(Number(e.target.value))} />
       </label>
 
